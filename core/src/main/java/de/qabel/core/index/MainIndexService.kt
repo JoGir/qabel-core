@@ -146,6 +146,7 @@ class MainIndexService(private val indexServer: IndexServer,
      * @Returns a list of [IndexSyncResult] for created and updated [Contact]s
      */
     override fun syncContacts(externalContactsAccessor: ExternalContactsAccessor): List<IndexSyncResult> {
+        val startTime = System.currentTimeMillis()
         val externalContacts: List<RawContact> = externalContactsAccessor.getContacts()
 
         //Map lists of values to a list of fieldType and value associated with its raw contact
@@ -162,10 +163,11 @@ class MainIndexService(private val indexServer: IndexServer,
             }
 
         val searchResults = DefaultHashMap<IndexContact, MutableList<IndexResult>>({ mutableListOf() })
+        var current = 1
         searchValues.forEach {
             val (contact, values) = it
             values.forEach { search ->
-                debug("IndexSearch for ${contact.displayName} with ${search.value} (${search.fieldType.name})")
+                debug("IndexSearch-$current for ${contact.displayName} with ${search.value} (${search.fieldType.name})")
                 indexServer.search(search.toMap()).forEach { indexContact ->
                     debug("Received IndexContact for ${contact.displayName} with ${search.value}. Received ${indexContact.alias} ${indexContact.publicKey.readableKeyIdentifier}")
                     val indexResults = searchResults.getOrDefault(indexContact)
@@ -174,6 +176,7 @@ class MainIndexService(private val indexServer: IndexServer,
                     } ?: indexResults.add(IndexResult(contact, mutableListOf(search)))
                     Unit
                 }
+                current++
             }
         }
 
@@ -188,6 +191,8 @@ class MainIndexService(private val indexServer: IndexServer,
                 results.add(it)
             }
         }
+        val endTime = System.currentTimeMillis()
+        debug("Sync contacts completed in ${endTime-startTime} with ${results.size} results")
         return results
     }
 
