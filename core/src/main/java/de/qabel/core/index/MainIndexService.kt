@@ -72,6 +72,8 @@ class MainIndexService(private val indexServer: IndexServer,
             VerificationStatus.VERIFIED
         } else {
             VerificationStatus.NOT_VERIFIED
+        }.apply {
+            debug("Find state for value ${fieldType.name} $value results ${this.name}")
         }
 
     override fun updateIdentityVerifications() {
