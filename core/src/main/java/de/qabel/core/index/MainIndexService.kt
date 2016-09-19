@@ -65,6 +65,7 @@ class MainIndexService(private val indexServer: IndexServer,
         if (value.isNullOrBlank()) {
             VerificationStatus.NONE
         } else if (indexServer.search(mapOf(Pair(fieldType, value!!))).any {
+            debug("Found identity ${it.alias} for field $fieldType $value (${it.publicKey.readableKeyIdentifier}")
             it.publicKey.readableKeyIdentifier == identity.keyIdentifier
         }) {
             //Identity found by field
