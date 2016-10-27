@@ -43,8 +43,9 @@ abstract class AbstractMetadata(val connection: ClientDatabase, path: File) {
     protected fun executeStatement(statementCallable: () -> PreparedStatement) {
         try {
             tryWith(statementCallable()) {
-                if (executeUpdate() != 1) {
-                    throw QblStorageException("Failed to execute statement")
+                val changedLines = executeUpdate()
+                if (changedLines != 1) {
+                    throw QblStorageException("Failed to execute statement, changedLines $changedLines != 1")
                 }
             }
         } catch (e: Exception) {
@@ -55,7 +56,7 @@ abstract class AbstractMetadata(val connection: ClientDatabase, path: File) {
     companion object {
         val TYPE_NONE = -1
         @JvmField
-        val JDBC_PREFIX = "jdbc:sqlite:"
+        val DEFAULT_JDBC_PREFIX: String = "jdbc:sqlite:"
     }
 }
 

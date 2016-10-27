@@ -1,19 +1,19 @@
 package de.qabel.box.storage.command
 
-import de.qabel.box.storage.BoxFolder
-import de.qabel.box.storage.DirectoryMetadata
-import de.qabel.box.storage.DirectoryMetadataFactory
-import de.qabel.box.storage.FolderNavigationFactory
+import de.qabel.box.storage.*
 import de.qabel.core.crypto.CryptoUtils
 import org.spongycastle.crypto.params.KeyParameter
 
 class CreateFolderChange(
-    private val name: String,
+    val parentNav: BoxNavigation,
+    val name: String,
     val navigationFactory: FolderNavigationFactory,
     val directoryFactory: DirectoryMetadataFactory
-) : DirectoryMetadataChange<ChangeResult<BoxFolder>> {
+) : DMChange<ChangeResult<BoxFolder>> {
     private val secretKey: KeyParameter by lazy { CryptoUtils().generateSymmetricKey() }
     private val result : ChangeResult<BoxFolder> by lazy { createAndUploadDM() }
+    val folder: BoxFolder
+        get() = result.boxObject
 
     @Synchronized
     override fun execute(dm: DirectoryMetadata): ChangeResult<BoxFolder> {
@@ -31,10 +31,7 @@ class CreateFolderChange(
         val folder = BoxFolder(childDM.fileName, name, secretKey.key)
         childDM.commit()
 
-        with(navigationFactory.fromDirectoryMetadata(childDM, folder)) {
-            setAutocommit(false)
-            commit()
-        }
+        navigationFactory.fromDirectoryMetadata(parentNav.path / folder.name, childDM, folder).commit()
 
         return ChangeResult(childDM, folder)
     }

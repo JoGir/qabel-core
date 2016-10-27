@@ -28,6 +28,9 @@ public class ConfigHashCodeTest {
             .ignoreProperty("alias")
             .ignoreProperty("email")
             .ignoreProperty("phone")
+            .ignoreProperty("status")
+            .ignoreProperty("ignored")
+            .ignoreProperty("nickName")
             .build();
         tester.testHashCodeMethod(new ContactEquivalentTestFactory(), config);
     }
@@ -50,10 +53,13 @@ public class ConfigHashCodeTest {
             .overrideFactory("drops", new DropUrlListTestFactory())
             .ignoreProperty("serialVersionUID")
             .ignoreProperty("alias")
+            .ignoreProperty("emailStatus")
             .ignoreProperty("email")
             .ignoreProperty("phone")
+            .ignoreProperty("phoneStatus")
             .ignoreProperty("observers")
             .ignoreProperty("prefixes")
+            .ignoreProperty("uploadEnabled")
             .build();
         tester.testHashCodeMethod(new IdentityEquivalentTestFactory(), config);
     }

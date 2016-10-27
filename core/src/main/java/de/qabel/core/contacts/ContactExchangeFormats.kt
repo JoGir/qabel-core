@@ -1,13 +1,11 @@
 package de.qabel.core.contacts
 
 import de.qabel.core.config.Contact
-import de.qabel.core.config.ContactExportImport
 import de.qabel.core.config.Identity
 import de.qabel.core.crypto.QblECPublicKey
 import de.qabel.core.drop.DropURL
 import de.qabel.core.exceptions.QblDropInvalidURL
 import de.qabel.core.exceptions.QblInvalidFormatException
-import de.qabel.core.extensions.toContact
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -76,11 +74,13 @@ class ContactExchangeFormats {
         val keyIdentifier = jsonObject.getString(KEY_PUBLIC_KEY)
 
         val contact = Contact(alias, dropURLs, QblECPublicKey(Hex.decode(keyIdentifier)))
-        if (jsonObject.has(KEY_EMAIL)) {
-            contact.email = jsonObject.getString(KEY_EMAIL)
+        val email = jsonObject.optString(KEY_EMAIL, "")
+        if (!email.isNullOrBlank()) {
+            contact.email = email
         }
-        if (jsonObject.has(KEY_PHONE)) {
-            contact.phone = jsonObject.getString(KEY_PHONE)
+        val phone = jsonObject.optString(KEY_PHONE, "")
+        if (!phone.isNullOrBlank()) {
+            contact.phone = phone
         }
         return contact
     }
@@ -89,8 +89,12 @@ class ContactExchangeFormats {
         val jsonObject = JSONObject()
         val jsonDropUrls = JSONArray()
         jsonObject.put(KEY_ALIAS, contact.alias)
-        jsonObject.put(KEY_EMAIL, contact.email)
-        jsonObject.put(KEY_PHONE, contact.phone)
+        if (!contact.email.isNullOrBlank()) {
+            jsonObject.put(KEY_EMAIL, contact.email)
+        }
+        if (!contact.phone.isNullOrBlank()) {
+            jsonObject.put(KEY_PHONE, contact.phone)
+        }
         jsonObject.put(KEY_PUBLIC_KEY, contact.keyIdentifier)
         for (dropURL in contact.dropUrls) {
             jsonDropUrls.put(dropURL)

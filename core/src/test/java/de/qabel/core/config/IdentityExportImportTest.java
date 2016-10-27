@@ -1,7 +1,5 @@
 package de.qabel.core.config;
 
-import de.qabel.core.config.Identity;
-import de.qabel.core.config.IdentityExportImport;
 import de.qabel.core.crypto.QblECKeyPair;
 import de.qabel.core.drop.DropURL;
 import org.junit.Test;
@@ -22,16 +20,17 @@ public class IdentityExportImportTest {
         dropURLs.add(new DropURL("http://localhost:6000/0000000000000000000000000000000000000000000"));
 
         Identity identity = new Identity("Identity", dropURLs, qblECKeyPair);
+        identity.setId(1);
         identity.setPhone("049111111");
         identity.setEmail("test@example.com");
-        identity.getPrefixes().add("prefix1");
-        identity.getPrefixes().add("prefix2");
+        identity.getPrefixes().add(new Prefix("prefix1"));
+        identity.getPrefixes().add(new Prefix("prefix2"));
 
         String exportedIdentity = IdentityExportImport.exportIdentity(identity);
 
         Identity importedIdentity = IdentityExportImport.parseIdentity(exportedIdentity);
 
-        assertEquals(identity.getId(), importedIdentity.getId());
+        assertEquals(0, importedIdentity.getId());
         assertEquals(identity.getEmail(), importedIdentity.getEmail());
         assertEquals(identity.getPhone(), importedIdentity.getPhone());
         assertEquals(identity.getPrimaryKeyPair(), importedIdentity.getPrimaryKeyPair());

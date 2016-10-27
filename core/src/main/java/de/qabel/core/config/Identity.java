@@ -13,14 +13,18 @@ public class Identity extends Entity {
 
     private String alias;
 
-    private String email;
+    private String email = "";
+    private VerificationStatus emailStatus = VerificationStatus.NONE;
 
-    private String phone;
+    private String phone = "";
+    private VerificationStatus phoneStatus = VerificationStatus.NONE;
 
-    private List<String> prefixes;
+    private List<Prefix> prefixes;
 
     @SerializedName("keys")
     private QblECKeyPair primaryKeyPair;
+
+    private boolean uploadEnabled = true;
 
     private List<IdentityObserver> observers = new ArrayList<IdentityObserver>();
 
@@ -42,12 +46,19 @@ public class Identity extends Entity {
         }
     }
 
+    public Contact toContact() {
+        Contact contact = new Contact(alias, getDropUrls(), getEcPublicKey());
+        contact.setEmail(email);
+        contact.setPhone(phone);
+        return contact;
+    }
+
     /**
      * Returns the list of prefixes of the identity
      *
      * @return prefixes
      */
-    public List<String> getPrefixes() {
+    public List<Prefix> getPrefixes() {
         return prefixes;
     }
 
@@ -57,7 +68,7 @@ public class Identity extends Entity {
      *
      * @param prefixes the prefixes of the identity
      */
-    public void setPrefixes(List<String> prefixes) {
+    public void setPrefixes(List<Prefix> prefixes) {
         this.prefixes = prefixes;
     }
 
@@ -98,6 +109,7 @@ public class Identity extends Entity {
      */
     public void setEmail(String email) {
         this.email = email;
+        notifyAllObservers();
     }
 
     /**
@@ -117,12 +129,13 @@ public class Identity extends Entity {
      */
     public void setPhone(String phone) {
         this.phone = phone;
+        notifyAllObservers();
     }
 
     /**
      * Sets the primary key pair of the identity.
      *
-     * @param key Primary Key pair of the identity.
+     * @param key Primary key pair of the identity.
      */
     public void setPrimaryKeyPair(QblECKeyPair key) {
         primaryKeyPair = key;
@@ -142,13 +155,23 @@ public class Identity extends Entity {
         return getPrimaryKeyPair().getPub();
     }
 
+    /**
+     * Returns the drop URL that should be used for the HELLO protocol, i.e.
+     * made public and exported to qabel-index.
+     */
+    public DropURL getHelloDropUrl() {
+        return (new ArrayList<>(getDropUrls())).get(0);
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
 
         result = super.hashCode();
+        result = prime * result + alias.hashCode();
         result = prime * result + (primaryKeyPair == null ? 0 : primaryKeyPair.hashCode());
+        result = prime * result + (prefixes == null ? 0 : prefixes.hashCode());
         return result;
     }
 
@@ -186,21 +209,30 @@ public class Identity extends Entity {
         } else if (!prefixes.equals(other.prefixes)) {
             return false;
         }
-        if (email == null) {
-            if (other.email != null) {
-                return false;
-            }
-        } else if (!email.equals(other.email)) {
-            return false;
-        }
-        if (phone == null) {
-            if (other.phone != null) {
-                return false;
-            }
-        } else if (!phone.equals(other.phone)) {
-            return false;
-        }
-
         return true;
+    }
+
+    public VerificationStatus getEmailStatus() {
+        return emailStatus;
+    }
+
+    public void setEmailStatus(VerificationStatus emailStatus) {
+        this.emailStatus = emailStatus;
+    }
+
+    public VerificationStatus getPhoneStatus() {
+        return phoneStatus;
+    }
+
+    public void setPhoneStatus(VerificationStatus phoneStatus) {
+        this.phoneStatus = phoneStatus;
+    }
+
+    public boolean isUploadEnabled() {
+        return uploadEnabled;
+    }
+
+    public void setUploadEnabled(boolean uploadEnabled) {
+        this.uploadEnabled = uploadEnabled;
     }
 }

@@ -5,12 +5,22 @@ import de.qabel.box.storage.BoxFile
 import de.qabel.box.storage.FileMetadataFactory
 import de.qabel.box.storage.exceptions.QblStorageException
 import de.qabel.core.crypto.QblECPublicKey
+import de.qabel.core.repository.sqlite.PragmaVersionAdapter
+import de.qabel.core.repository.sqlite.VersionAdapter
 import java.io.File
 import java.io.IOException
+import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException
 
-class JdbcFileMetadataFactory(val tmpDir: File) : FileMetadataFactory {
+class JdbcFileMetadataFactory @JvmOverloads constructor(
+    val tmpDir: File,
+    var versionAdapterFactory : (connection : Connection) -> VersionAdapter = { PragmaVersionAdapter(it)},
+    val jdbcPrefix: String = AbstractMetadata.DEFAULT_JDBC_PREFIX
+) : FileMetadataFactory {
+
+
+
     @Throws(QblStorageException::class)
     override fun create(owner: QblECPublicKey, boxFile: BoxFile): JdbcFileMetadata = openNew(owner, boxFile)
 
@@ -18,9 +28,9 @@ class JdbcFileMetadataFactory(val tmpDir: File) : FileMetadataFactory {
 
     private fun openExisting(path: File): JdbcFileMetadata {
         try {
-            val connection = DriverManager.getConnection(AbstractMetadata.JDBC_PREFIX + path.absolutePath)
+            val connection = DriverManager.getConnection(jdbcPrefix+ path.absolutePath)
             connection.autoCommit = true
-            val db = FileMetadataDatabase(connection)
+            val db = FileMetadataDatabase(connection, versionAdapterFactory.invoke(connection))
             db.migrate()
             return JdbcFileMetadata(db, path)
         } catch (e: SQLException) {
@@ -33,9 +43,9 @@ class JdbcFileMetadataFactory(val tmpDir: File) : FileMetadataFactory {
         try {
             val path = File.createTempFile("dir", "db6", tmpDir)
 
-            val connection = DriverManager.getConnection(AbstractMetadata.JDBC_PREFIX + path.absolutePath)
+            val connection = DriverManager.getConnection(jdbcPrefix + path.absolutePath)
             connection.autoCommit = true
-            val db = FileMetadataDatabase(connection)
+            val db = FileMetadataDatabase(connection, versionAdapterFactory.invoke(connection))
             db.migrate()
             return JdbcFileMetadata(db, path).apply { insertFile(owner, boxFile) }
         } catch (e: SQLException) {

@@ -4,6 +4,10 @@ import de.qabel.box.storage.exceptions.QblStorageException
 import java.io.File
 
 interface DirectoryMetadata {
+    val path: File
+    val fileName: String
+    val version: ByteArray
+
     @Throws(QblStorageException::class)
     fun insertFile(file: BoxFile)
 
@@ -14,10 +18,22 @@ interface DirectoryMetadata {
     fun deleteFile(file: BoxFile)
 
     @Throws(QblStorageException::class)
+    fun replaceFile(file: BoxFile) {
+        getFile(file.getName())?.let { deleteFile(it) }
+        insertFile(file)
+    }
+
+    @Throws(QblStorageException::class)
     fun deleteFolder(folder: BoxFolder)
 
     @Throws(QblStorageException::class)
     fun getFile(name: String): BoxFile?
+
+    @Throws(QblStorageException::class)
+    fun hasFolder(name: String) = getFolder(name) !== null
+
+    @Throws(QblStorageException::class)
+    fun hasFile(name: String): Boolean = getFile(name) != null
 
     @Throws(QblStorageException::class)
     fun getFolder(name: String): BoxFolder?
@@ -34,13 +50,8 @@ interface DirectoryMetadata {
     @Throws(QblStorageException::class)
     fun insertShare(share: BoxShare)
 
-    val version: ByteArray
-
     @Throws(QblStorageException::class)
     fun commit()
 
     fun listShares(): List<BoxShare>
-
-    val path: File
-    val fileName: String
 }

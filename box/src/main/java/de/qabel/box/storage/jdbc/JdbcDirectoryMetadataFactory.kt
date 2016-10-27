@@ -13,11 +13,13 @@ import java.sql.DriverManager
 import java.sql.SQLException
 import java.util.*
 
-class JdbcDirectoryMetadataFactory(val tempDir: File,
-                                   val deviceId: ByteArray,
-                                   private val dataBaseFactory: (Connection) -> DirectoryMetadataDatabase =
-                                       { DirectoryMetadataDatabase(it) }
-                                   ) : DirectoryMetadataFactory {
+class JdbcDirectoryMetadataFactory @JvmOverloads constructor(
+    val tempDir: File,
+    val deviceId: ByteArray,
+    private val dataBaseFactory: (Connection) -> DirectoryMetadataDatabase = { DirectoryMetadataDatabase(it) },
+    val jdbcPrefix: String = AbstractMetadata.DEFAULT_JDBC_PREFIX
+) : DirectoryMetadataFactory {
+
     /**
      * Create (and init) a new Index DM including a new database file
      *
@@ -41,7 +43,7 @@ class JdbcDirectoryMetadataFactory(val tempDir: File,
      * @param fileName  name of the file on the storage backend (remote ref)
      */
     override fun open(path: File, fileName: String): JdbcDirectoryMetadata {
-        return openDatabase(path, deviceId, fileName, tempDir)
+        return openDatabase(path, deviceId, fileName)
     }
 
 
@@ -53,13 +55,11 @@ class JdbcDirectoryMetadataFactory(val tempDir: File,
      * @param deviceId 16 random bytes that identify the current device
      * *
      * @param fileName name of the file on the storage backend
-     * *
-     * @param tempDir  writable temp directory
      */
     @Throws(QblStorageException::class)
-    private fun openDatabase(path: File, deviceId: ByteArray, fileName: String, tempDir: File): JdbcDirectoryMetadata {
+    private fun openDatabase(path: File, deviceId: ByteArray, fileName: String): JdbcDirectoryMetadata {
         try {
-            val connection = DriverManager.getConnection(AbstractMetadata.JDBC_PREFIX + path.absolutePath)
+            val connection = DriverManager.getConnection(jdbcPrefix + path.absolutePath)
             connection.autoCommit = true
             tryWith(connection.createStatement()) { execute("PRAGMA journal_mode=MEMORY") }
             val db = dataBaseFactory(connection)
@@ -89,7 +89,7 @@ class JdbcDirectoryMetadataFactory(val tempDir: File,
             throw QblStorageIOFailure(e)
         }
 
-        val dm = openDatabase(path, deviceId, UUID.randomUUID().toString(), tempDir)
+        val dm = openDatabase(path, deviceId, UUID.randomUUID().toString())
         try {
             initDatabase(dm)
             if (root != null) { dm.insertRoot(root) }

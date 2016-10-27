@@ -1,11 +1,13 @@
 package de.qabel.core.config;
 
+import de.qabel.core.repository.framework.BaseEntity;
+
 import java.util.Date;
 
 /**
  * Class SyncSettingItem: Class to store common setting for synced item
  */
-public class SyncSettingItem extends Persistable {
+public class SyncSettingItem extends Persistable implements BaseEntity {
     private static final long serialVersionUID = -923043585748841729L;
 
     private int id;
@@ -88,13 +90,7 @@ public class SyncSettingItem extends Persistable {
     @Override
     public int hashCode() {
         final int prime = 31;
-        int result = 1;
-        result = prime * result + id;
-        result = prime * result + new Long(created).hashCode();
-        result = prime * result + new Long(updated).hashCode();
-        result = prime * result + new Long(deleted).hashCode();
-
-        return result;
+        return prime + id;
     }
 
     @Override
@@ -113,15 +109,6 @@ public class SyncSettingItem extends Persistable {
 
         other = (SyncSettingItem) obj;
 
-        if (created != other.created) {
-            return false;
-        }
-        if (updated != other.updated) {
-            return false;
-        }
-        if (deleted != other.deleted) {
-            return false;
-        }
         return id == other.id;
 
     }
