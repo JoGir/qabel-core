@@ -404,10 +404,13 @@ abstract class AbstractNavigation(
             val outputStream = FileOutputStream(tempFile)
             val inputStream = InputStreamListener(fileInput) { bytes, n -> digest.update(bytes, 0, n) }
 
+            val time = System.currentTimeMillis()
+            debug("Start encrypting")
             if (!cryptoUtils.encryptStreamAuthenticatedSymmetric(inputStream, outputStream, key, null)) {
                 throw QblStorageException("Encryption failed")
             }
             outputStream.flush()
+            debug("completed encrypting")
             val serverTime = DeleteOnCloseFileInputStream(tempFile).use { fis: FileInputStream ->
                 if (listener != null) {
                     listener.setSize(tempFile.length())
