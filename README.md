@@ -3,22 +3,23 @@
 	<img src="https://files.qabel.de/img/qabel_logo_orange_preview.png" height="150px" align="left"/>
 </a>
 <img align="left" width="0" height="150px" hspace="25"/>
-> The Qabel Core Library
+**The Qabel Core Library**
 
 This project provides a core library for all Qabel Clients implementing <a href="https://qabel.de"><img alt="Qabel" src="https://files.qabel.de/img/qabel-kl.png" height="18px"/></a>.
 
 <br style="clear: both"/>
-<br style="clear: both"/>
-<p align="center">
+<p>
 	<a href="#introduction">Introduction</a> |
 	<a href="#install">Install</a> |
 	<a href="#getting_started">Getting Started</a> |
 	<a href="#usage">Usage</a> |
 	<a href="#contribution">Contribution</a>
 </p>
+<br style="clear: both"/>
 
 [![Release](https://img.shields.io/github/release/Qabel/qabel-core.svg)](https://jitpack.io/#Qabel/qabel-core)
-[![Release](https://img.shields.io/badge/License-QaPL-blue.svg)](https://github.com/Qabel/qabel-core/blob/master/LICENSE)
+[![License](https://img.shields.io/badge/License-QaPL-blue.svg)](https://github.com/Qabel/qabel-core/blob/master/LICENSE)
+![Build](https://teamcity.qabel.de/app/rest/builds/buildType:QabelCore_Build/statusIcon.svg)
 
 # Introduction
 
