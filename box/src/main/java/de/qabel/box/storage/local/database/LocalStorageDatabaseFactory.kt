@@ -29,6 +29,8 @@ class LocalStorageDatabaseFactory @JvmOverloads constructor(
     @Throws(QblStorageException::class)
     fun openDatabase(): LocalStorageDatabase {
         try {
+            if(!storageDBFile.exists()) storageDBFile.createNewFile()
+
             val connection = DriverManager.getConnection(jdbcPrefix + storageDBFile.absolutePath)
             connection.autoCommit = true
             val db = LocalStorageDatabase(connection)
