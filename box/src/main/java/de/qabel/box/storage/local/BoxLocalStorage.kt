@@ -11,6 +11,7 @@ import de.qabel.core.extensions.letApply
 import de.qabel.core.repository.exception.EntityNotFoundException
 import org.spongycastle.crypto.params.KeyParameter
 import java.io.File
+import java.io.InputStream
 import java.util.*
 
 class BoxLocalStorage(private val storageFolder: File,
@@ -38,7 +39,10 @@ class BoxLocalStorage(private val storageFolder: File,
         return null
     }
 
-    override fun storeFile(plainFile: File, boxFile: BoxFile, path: BoxPath.File) {
+    override fun storeFile(plainFile: File, boxFile: BoxFile, path: BoxPath.File) : Unit =
+        storeFile(plainFile.inputStream(), boxFile, path)
+
+    override fun storeFile(input: InputStream, boxFile: BoxFile, path: BoxPath.File) {
         val entry: StorageEntry = try {
             repository.findEntry(boxFile.prefix, path).letApply {
                 if (!checkExisting(boxFile, it)) {
@@ -52,7 +56,7 @@ class BoxLocalStorage(private val storageFolder: File,
             }
         }
         val storageFile = getLocalFile(boxFile, true)
-        if (!cryptoUtils.encryptStreamAuthenticatedSymmetric(plainFile.inputStream(), storageFile.outputStream(), KeyParameter(boxFile.key), null)) {
+        if (!cryptoUtils.encryptStreamAuthenticatedSymmetric(input, storageFile.outputStream(), KeyParameter(boxFile.key), null)) {
             throw QblStorageException("Encryption failed")
         }
         entry.storageTime = Date()
