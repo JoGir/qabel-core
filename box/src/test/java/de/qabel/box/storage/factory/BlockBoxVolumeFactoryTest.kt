@@ -15,6 +15,7 @@ import de.qabel.core.config.Prefix.TYPE.USER
 import de.qabel.core.extensions.letApply
 import de.qabel.core.repository.IdentityRepository
 import de.qabel.core.testIdentity
+import de.qabel.core.testserver
 import org.junit.Test
 import org.mockito.stubbing.OngoingStubbing
 import java.io.ByteArrayInputStream
@@ -25,7 +26,7 @@ class BlockBoxVolumeFactoryTest {
     val account = Account("accounting.qabel.org", "testuser", "testpass")
     val boxClient: BoxClient = spy()
     val identity = testIdentity()
-    val blockUri = URI("http://localhost:9697")
+    val blockUri = URI("http://$testserver:9697")
     val identityRepository: IdentityRepository = mock()
     val readBackend = StubReadBackend()
     val tmpDir = createTempDir("qbltest")
@@ -98,6 +99,7 @@ class BlockBoxVolumeFactoryTest {
         identity.prefixes = mutableListOf(prefix1, prefix3)
 
         assertThat(choose(CLIENT), equalTo("prefix3"))
+        assertThat(identity.prefixes.last().account ?: "", equalTo("testuser"))
     }
 
     private fun choose(type: Prefix.TYPE = USER) = factory.choosePrefix(identity, account, type)
@@ -120,6 +122,7 @@ class BlockBoxVolumeFactoryTest {
     fun usesRemotePrefixWithIndexIfExistingAndNoLocalIsAvailable() {
         hasRef(prefix2)
         assertThat(choose(), equalTo("prefix2"))
+        assertThat(identity.prefixes.last().account ?: "", equalTo("testuser"))
     }
 
     @Test
@@ -135,5 +138,6 @@ class BlockBoxVolumeFactoryTest {
         identity.prefixes = listOf(prefix2)
 
         assertThat(choose(), equalTo("prefix2"))
+        assertThat(identity.prefixes.last().account ?: "", equalTo("testuser"))
     }
 }
