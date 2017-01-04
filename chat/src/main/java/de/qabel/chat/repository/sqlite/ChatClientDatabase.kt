@@ -1,5 +1,6 @@
 package de.qabel.chat.repository.sqlite
 
+import de.qabel.box.storage.local.database.migrations.LSMigration1Init
 import de.qabel.chat.repository.sqlite.migration.Migration1460997040ChatDropMessage
 import de.qabel.chat.repository.sqlite.migration.Migration1460997041ChatShares
 import de.qabel.core.repository.sqlite.AbstractClientDatabase
@@ -15,6 +16,7 @@ open class ChatClientDatabase(connection: Connection) : DesktopClientDatabase(co
 
     override fun getMigrations(connection: Connection): Array<AbstractMigration> =
         super.getMigrations(connection) +
-            listOf(Migration1460997040ChatDropMessage(connection), Migration1460997041ChatShares(connection))
+            listOf(Migration1460997040ChatDropMessage(connection), Migration1460997041ChatShares(connection),
+                LSMigration1Init(connection))
 
 }
