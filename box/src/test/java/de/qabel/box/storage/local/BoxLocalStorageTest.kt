@@ -3,7 +3,6 @@ package de.qabel.box.storage.local
 import de.qabel.box.storage.*
 import de.qabel.box.storage.dto.BoxPath
 import de.qabel.box.storage.local.database.LocalStorageDatabase
-import de.qabel.box.storage.local.database.LocalStorageDatabaseFactory
 import de.qabel.box.storage.local.repository.BoxLocalStorageRepository
 import de.qabel.core.config.Identity
 import de.qabel.core.crypto.CryptoUtils
