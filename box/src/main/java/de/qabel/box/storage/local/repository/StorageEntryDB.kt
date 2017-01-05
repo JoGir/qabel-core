@@ -42,8 +42,8 @@ object StorageEntryDB : DBRelation<StorageEntry> {
             statement.setString(i++, model.path.toString())
             statement.setString(i++, model.block)
             statement.setString(i++, model.modifiedTag)
-            statement.setDate(i++, Date(model.storageTime.time))
-            statement.setDate(i++, Date(model.accessTime.time))
+            statement.setLong(i++, model.storageTime.time)
+            statement.setLong(i++, model.accessTime.time)
             statement.setInt(i++, model.type.type)
             return i
         }
