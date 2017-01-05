@@ -3,9 +3,9 @@ package de.qabel.box.storage.local.database.migrations
 import de.qabel.core.repository.sqlite.migration.AbstractMigration
 import java.sql.Connection
 
-class LSMigration1Init(connection: Connection) : AbstractMigration(connection) {
+class LSMigration1460997045Init(connection: Connection) : AbstractMigration(connection) {
 
-    override fun getVersion() = 1L
+    override fun getVersion() = 1460997045L
 
     override fun up() {
         execute("""CREATE TABLE IF NOT EXISTS storage_entries (
