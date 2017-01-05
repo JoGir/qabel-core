@@ -12,9 +12,9 @@ import de.qabel.core.repository.EntityManager
 import de.qabel.core.repository.framework.DBField
 import de.qabel.core.repository.framework.DBRelation
 import de.qabel.core.repository.sqlite.hydrator.BaseEntityResultAdapter
-import java.sql.Date
 import java.sql.PreparedStatement
 import java.sql.ResultSet
+import java.util.*
 
 object StorageEntryDB : DBRelation<StorageEntry> {
 
@@ -60,8 +60,9 @@ class StorageEntryResultAdapter : BaseEntityResultAdapter<StorageEntry>(StorageE
                 createBoxPath(getString(PATH.alias()), type),
                 getString(BLOCK.alias()),
                 getString(MODIFIED_TAG.alias()),
-                type, getDate(STORAGE_TIME.alias()),
-                getDate(ACCESS_TIME.alias()),
+                type,
+                Date(getLong(STORAGE_TIME.alias())),
+                Date(getLong(ACCESS_TIME.alias())),
                 entityId)
         }
     }
