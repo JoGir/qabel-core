@@ -72,7 +72,8 @@ class StorageEntryResultAdapter : BaseEntityResultAdapter<StorageEntry>(StorageE
         val parts = pathString.split("/")
         parts.forEachIndexed { i, part ->
             if (i < parts.size - 1) {
-                path = BoxPath.Folder(part, path)
+                if (!part.isNullOrBlank())
+                    path = BoxPath.Folder(part, path)
             }
         }
         return when (type) {
