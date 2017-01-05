@@ -59,7 +59,7 @@ class StorageEntryResultAdapter : BaseEntityResultAdapter<StorageEntry>(StorageE
             return StorageEntry(getString(PREFIX.alias()),
                 createBoxPath(getString(PATH.alias()), type),
                 getString(BLOCK.alias()),
-                getString(MODIFIED_TAG.name),
+                getString(MODIFIED_TAG.alias()),
                 type, getDate(STORAGE_TIME.alias()),
                 getDate(ACCESS_TIME.alias()),
                 entityId)
