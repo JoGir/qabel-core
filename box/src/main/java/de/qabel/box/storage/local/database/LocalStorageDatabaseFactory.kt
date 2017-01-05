@@ -15,6 +15,7 @@ import java.sql.DriverManager
 import java.sql.SQLException
 import java.util.*
 
+@Deprecated("Use global client database...")
 class LocalStorageDatabaseFactory @JvmOverloads constructor(
     storageDirectory: File,
     val deviceId: ByteArray,

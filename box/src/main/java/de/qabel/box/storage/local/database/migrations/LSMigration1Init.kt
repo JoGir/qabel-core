@@ -15,7 +15,8 @@ class LSMigration1Init(connection: Connection) : AbstractMigration(connection) {
                 block LONG NOT NULL,
                 type INTEGER NOT NULL,
                 modified_tag VARCHAR(255) NOT NULL,
-                storage_time DATE NOT NULL)""")
+                storage_time DATE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                access_time DATE NOT NULL DEFAULT CURRENT_TIMESTAMP)""")
     }
 
     override fun down() {

@@ -2,6 +2,7 @@ package de.qabel.box.storage.local
 
 import de.qabel.box.storage.*
 import de.qabel.box.storage.dto.BoxPath
+import de.qabel.box.storage.local.database.LocalStorageDatabase
 import de.qabel.box.storage.local.database.LocalStorageDatabaseFactory
 import de.qabel.box.storage.local.repository.BoxLocalStorageRepository
 import de.qabel.core.config.Identity
@@ -18,6 +19,7 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import java.io.File
+import java.sql.DriverManager
 
 class BoxLocalStorageTest : CoreTestCase {
 
@@ -61,9 +63,10 @@ class BoxLocalStorageTest : CoreTestCase {
             random.delete()
         }
         testBoxFile = navigationA.upload(testFile.name, testFile)
-
-        val storageDBFactory = LocalStorageDatabaseFactory(storageDir, deviceID)
-        storage = BoxLocalStorage(storageDir, externalDir, cryptoUtil, BoxLocalStorageRepository(storageDBFactory.openDatabase(), EntityManager()))
+        val connection = DriverManager.getConnection("jdbc:sqlite::memory:")
+        val clientDatabase = LocalStorageDatabase(connection)
+        clientDatabase.migrate()
+        storage = BoxLocalStorage(storageDir, externalDir, cryptoUtil, BoxLocalStorageRepository(clientDatabase, EntityManager()))
     }
 
     @After
@@ -75,7 +78,7 @@ class BoxLocalStorageTest : CoreTestCase {
     }
 
     @Test
-    fun getBoxFile() {
+    fun testFileRoundTrip() {
         val path = BoxPath.Root * testBoxFile.name
         val localDir = File(storageDir, "prefix")
         assertNull(storage.getBoxFile(path, testBoxFile))
@@ -98,11 +101,6 @@ class BoxLocalStorageTest : CoreTestCase {
         assertEquals(1, localDir.list().size)
         assertFileEquals(storedFile2, testFile)
         assertArrayEquals(testString.toByteArray(), FileUtils.readFileToByteArray(storedFile))
-    }
-
-    @Test
-    fun storeFile() {
-
     }
 
     fun assertFileEquals(current: File, expected: File) {

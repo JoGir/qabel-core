@@ -1,6 +1,7 @@
 package de.qabel.box.storage.local.repository
 
 import de.qabel.box.storage.dto.BoxPath
+import de.qabel.box.storage.local.repository.StorageEntryDB.ACCESS_TIME
 import de.qabel.box.storage.local.repository.StorageEntryDB.BLOCK
 import de.qabel.box.storage.local.repository.StorageEntryDB.MODIFIED_TAG
 import de.qabel.box.storage.local.repository.StorageEntryDB.PATH
@@ -22,6 +23,7 @@ object StorageEntryDB : DBRelation<StorageEntry> {
 
     override val ID = field("id")
     val STORAGE_TIME = field("storage_time")
+    val ACCESS_TIME = field("access_time")
 
     val PREFIX = field("prefix")
     val PATH = field("path")
@@ -29,7 +31,7 @@ object StorageEntryDB : DBRelation<StorageEntry> {
     val TYPE = field("type")
     val MODIFIED_TAG = field("modified_tag")
 
-    override val ENTITY_FIELDS: List<DBField> = listOf(PREFIX, PATH, BLOCK, MODIFIED_TAG, STORAGE_TIME, TYPE)
+    override val ENTITY_FIELDS: List<DBField> = listOf(PREFIX, PATH, BLOCK, MODIFIED_TAG, STORAGE_TIME, ACCESS_TIME, TYPE)
 
     override val ENTITY_CLASS: Class<StorageEntry> = StorageEntry::class.java
 
@@ -41,6 +43,7 @@ object StorageEntryDB : DBRelation<StorageEntry> {
             statement.setString(i++, model.block)
             statement.setString(i++, model.modifiedTag)
             statement.setDate(i++, Date(model.storageTime.time))
+            statement.setDate(i++, Date(model.accessTime.time))
             statement.setInt(i++, model.type.type)
             return i
         }
@@ -58,6 +61,7 @@ class StorageEntryResultAdapter : BaseEntityResultAdapter<StorageEntry>(StorageE
                 getString(BLOCK.alias()),
                 getString(MODIFIED_TAG.name),
                 type, getDate(STORAGE_TIME.alias()),
+                getDate(ACCESS_TIME.alias()),
                 entityId)
         }
     }
