@@ -20,4 +20,12 @@ class BoxLocalStorageRepository(database: ClientDatabase,
         }
     }
 
+    override fun findByPath(prefix: String, path: BoxPath): List<StorageEntry> {
+        with(createEntityQuery()) {
+            whereAndEquals(PREFIX, prefix)
+          //  whereAndEquals(PATH, path.toString())
+            return getResultList(queryBuilder = this)
+        }
+    }
+
 }

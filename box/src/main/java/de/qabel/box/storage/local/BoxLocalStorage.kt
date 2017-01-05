@@ -24,6 +24,9 @@ class BoxLocalStorage(private val storageFolder: File,
                             boxFile: BoxFile): File? {
         try {
             debug("Get local file ${path.name}")
+            repository.findByPath(boxFile.prefix, path.parent).map {
+                debug("Entry: ${it.path}")
+            }
             val entry = repository.findEntry(boxFile.prefix, path)
             val file = getLocalFile(boxFile)
             if (checkExisting(boxFile, entry)) {
