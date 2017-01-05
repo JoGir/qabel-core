@@ -8,6 +8,7 @@ import de.qabel.box.storage.local.repository.LocalStorageRepository
 import de.qabel.box.storage.local.repository.StorageEntry
 import de.qabel.core.crypto.CryptoUtils
 import de.qabel.core.extensions.letApply
+import de.qabel.core.logging.QabelLog
 import de.qabel.core.repository.exception.EntityNotFoundException
 import org.spongycastle.crypto.params.KeyParameter
 import java.io.File
@@ -17,14 +18,16 @@ import java.util.*
 class BoxLocalStorage(private val storageFolder: File,
                       private val tmpFolder: File,
                       private val cryptoUtils: CryptoUtils,
-                      private val repository: LocalStorageRepository) : LocalStorage {
+                      private val repository: LocalStorageRepository) : LocalStorage, QabelLog {
 
     override fun getBoxFile(path: BoxPath.File,
                             boxFile: BoxFile): File? {
         try {
+            debug("Get local file ${path.name}")
             val entry = repository.findEntry(boxFile.prefix, path)
             val file = getLocalFile(boxFile)
             if (checkExisting(boxFile, entry)) {
+                debug("Found local file ${path.name}")
                 val externalFile = File(tmpFolder, boxFile.name)
                 if (!cryptoUtils.decryptFileAuthenticatedSymmetricAndValidateTag(file.inputStream(),
                     externalFile, KeyParameter(boxFile.key))) {
@@ -41,20 +44,23 @@ class BoxLocalStorage(private val storageFolder: File,
         return null
     }
 
-    override fun storeFile(plainFile: File, boxFile: BoxFile, path: BoxPath.File) : Unit =
+    override fun storeFile(plainFile: File, boxFile: BoxFile, path: BoxPath.File): Unit =
         storeFile(plainFile.inputStream(), boxFile, path)
 
     override fun storeFile(input: InputStream, boxFile: BoxFile, path: BoxPath.File) {
+        debug("Store local file ${path.name}")
         val entry: StorageEntry = try {
             repository.findEntry(boxFile.prefix, path).letApply {
                 if (!checkExisting(boxFile, it)) {
                     it.block = boxFile.block
                     it.modifiedTag = boxFile.mtime.toString()
                 }
+                debug("Override local file ${path.name}")
             }
         } catch (ex: EntityNotFoundException) {
             StorageEntry(boxFile.prefix, path, boxFile.block, boxFile.mtime.toString(), EntryType.FILE, Date(), Date()).letApply {
                 repository.persist(it)
+                debug("Stored new local file ${path.name}")
             }
         }
         val storageFile = getLocalFile(boxFile, true)
