@@ -30,6 +30,8 @@ class BoxLocalStorage(private val storageFolder: File,
                     externalFile, KeyParameter(boxFile.key))) {
                     throw QblStorageException("Decryption failed")
                 }
+                entry.accessTime = Date()
+                repository.update(entry)
                 return externalFile
             } else {
                 repository.delete(entry.id)
@@ -51,7 +53,7 @@ class BoxLocalStorage(private val storageFolder: File,
                 }
             }
         } catch (ex: EntityNotFoundException) {
-            StorageEntry(boxFile.prefix, path, boxFile.block, boxFile.mtime.toString(), EntryType.FILE).letApply {
+            StorageEntry(boxFile.prefix, path, boxFile.block, boxFile.mtime.toString(), EntryType.FILE, Date(), Date()).letApply {
                 repository.persist(it)
             }
         }
