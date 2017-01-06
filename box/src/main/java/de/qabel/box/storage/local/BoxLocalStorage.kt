@@ -51,7 +51,7 @@ class BoxLocalStorage(private val storageFolder: File,
     }
 
     override fun storeDirectoryMetadata(path: BoxPath.Folder, boxFolder: BoxFolder, directoryMetadata: DirectoryMetadata, prefix: String) {
-        identifier(path, boxFolder, prefix, Hex.encodeHex(directoryMetadata.version).toString()).let {
+        identifier(path, boxFolder, prefix, Hex.encodeHexString(directoryMetadata.version)).let {
             debug("Store local dm $it")
             updateStorageEntry(it, directoryMetadata.path.inputStream())
         }
