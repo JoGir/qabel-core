@@ -32,10 +32,9 @@ class MockLocalStorage : LocalStorage {
         return null
     }
 
-    override fun storeFile(plainFile: File, boxFile: BoxFile, path: BoxPath.File) = storeFile(plainFile.inputStream(), boxFile, path)
-
-    override fun storeFile(input: InputStream, boxFile: BoxFile, path: BoxPath.File) {
+    override fun storeFile(input: InputStream, boxFile: BoxFile, path: BoxPath.File): File {
         files.put(key(path, boxFile), Pair(boxFile.block, IOUtils.toByteArray(input)))
+        return getBoxFile(path, boxFile)!!
     }
 
     override fun getDirectoryMetadata(boxVolume: BoxVolume, path: BoxPath.Folder, boxFolder: BoxFolder): DirectoryMetadata? {

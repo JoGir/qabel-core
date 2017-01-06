@@ -1,8 +1,6 @@
 package de.qabel.box.storage.local
 
 import de.qabel.box.storage.*
-import org.hamcrest.Matchers.equalTo
-import org.hamcrest.Matchers.hasSize
 import de.qabel.box.storage.dto.BoxPath
 import de.qabel.box.storage.local.database.LocalStorageDatabase
 import de.qabel.box.storage.local.repository.BoxLocalStorageRepository
@@ -15,6 +13,7 @@ import de.qabel.core.extensions.randomFile
 import de.qabel.core.repository.EntityManager
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
+import org.hamcrest.Matchers.equalTo
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -87,7 +86,7 @@ class BoxLocalStorageTest : CoreTestCase {
         val localDir = File(storageDir, "prefix")
         assertNull(storage.getBoxFile(path, testBoxFile))
 
-        storage.storeFile(testFile, testBoxFile, path)
+        storage.storeFile(testFile.inputStream(), testBoxFile, path)
         val storedFile = storage.getBoxFile(path, testBoxFile) ?: throw AssertionError("Stored file not found!")
         assertEquals(1, localDir.list().size)
         assertFileEquals(storedFile, testFile)
@@ -98,9 +97,10 @@ class BoxLocalStorageTest : CoreTestCase {
 
         val boxFile = navigationA.listFiles().first()
         assertNull(storage.getBoxFile(path, boxFile))
+        println(localDir.list().joinToString("\n"))
         assertEquals(0, localDir.list().size)
 
-        storage.storeFile(storedFile, boxFile, path)
+        storage.storeFile(storedFile.inputStream(), boxFile, path)
         val storedFile2 = storage.getBoxFile(path, boxFile) ?: throw AssertionError("Stored file not found!")
         assertEquals(1, localDir.list().size)
         assertFileEquals(storedFile2, testFile)

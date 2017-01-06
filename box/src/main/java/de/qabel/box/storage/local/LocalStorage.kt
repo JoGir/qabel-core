@@ -11,9 +11,7 @@ import java.io.InputStream
 interface LocalStorage {
 
     fun getBoxFile(path: BoxPath.File, boxFile: BoxFile): File?
-
-    fun storeFile(plainFile: File, boxFile: BoxFile, path: BoxPath.File)
-    fun storeFile(input: InputStream, boxFile: BoxFile, path: BoxPath.File)
+    fun storeFile(input: InputStream, boxFile: BoxFile, path: BoxPath.File) : File
 
     fun storeDirectoryMetadata(path: BoxPath.Folder, boxFolder: BoxFolder, directoryMetadata: DirectoryMetadata, prefix: String)
     fun getDirectoryMetadata(boxVolume: BoxVolume, path: BoxPath.Folder, boxFolder: BoxFolder): DirectoryMetadata?

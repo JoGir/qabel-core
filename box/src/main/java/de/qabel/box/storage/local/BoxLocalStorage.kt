@@ -10,11 +10,11 @@ import de.qabel.box.storage.exceptions.QblStorageNotFound
 import de.qabel.box.storage.local.repository.EntryType
 import de.qabel.box.storage.local.repository.LocalStorageRepository
 import de.qabel.box.storage.local.repository.StorageEntry
-import de.qabel.core.config.Prefix
 import de.qabel.core.crypto.CryptoUtils
 import de.qabel.core.extensions.letApply
 import de.qabel.core.logging.QabelLog
 import de.qabel.core.repository.exception.EntityNotFoundException
+import org.apache.commons.codec.binary.Hex
 import org.spongycastle.crypto.params.KeyParameter
 import java.io.File
 import java.io.InputStream
@@ -27,75 +27,105 @@ class BoxLocalStorage(private val storageFolder: File,
 
     override fun getBoxFile(path: BoxPath.File,
                             boxFile: BoxFile): File? {
+        return identifier(path, boxFile).let {
+            debug("Get local file $it")
+            getStorageEntry(it, { File(tmpFolder, boxFile.name) }, { it })
+        }
+    }
+
+    override fun storeFile(input: InputStream, boxFile: BoxFile, path: BoxPath.File): File {
+        identifier(path, boxFile).let {
+            debug("Store local file $it}")
+            updateStorageEntry(it, input)
+        }
+        return getBoxFile(path, boxFile) ?: throw QblStorageException("Store local file failed!")
+    }
+
+    override fun getDirectoryMetadata(boxVolume: BoxVolume, path: BoxPath.Folder, boxFolder: BoxFolder): DirectoryMetadata? {
+        return identifier(path, boxFolder, boxVolume.config.prefix).let {
+            debug("Get local dm $it")
+            getStorageEntry(it,
+                { File.createTempFile("dir", "db2", tmpFolder) },
+                { file -> boxVolume.config.directoryFactory.open(file, it.currentRef) })
+        }
+    }
+
+    override fun storeDirectoryMetadata(path: BoxPath.Folder, boxFolder: BoxFolder, directoryMetadata: DirectoryMetadata, prefix: String) {
+        identifier(path, boxFolder, prefix, Hex.encodeHex(directoryMetadata.version).toString()).let {
+            debug("Store local dm $it")
+            updateStorageEntry(it, directoryMetadata.path.inputStream())
+        }
+    }
+
+    private fun <T> getStorageEntry(identifier: StorageIdentifier, targetFile: () -> File, readFile: (File) -> T?): T? {
         try {
-            debug("Get local file ${path.name}")
-            val entry = repository.findEntry(boxFile.prefix, path, EntryType.FILE)
-            val file = getLocalFile(boxFile.prefix, boxFile.block)
-            if (checkExisting(boxFile, entry)) {
-                debug("Found local file ${path.name}")
-                val externalFile = File(tmpFolder, boxFile.name)
-                if (!cryptoUtils.decryptFileAuthenticatedSymmetricAndValidateTag(file.inputStream(),
-                    externalFile, KeyParameter(boxFile.key))) {
-                    throw QblStorageException("Decryption failed")
+            val entry = repository.findEntry(identifier.prefix, identifier.path, identifier.type)
+            val file = getLocalFile(entry)
+            if (entry.ref == identifier.currentRef &&
+                (identifier.modifiedTag.isBlank() || identifier.modifiedTag == entry.modifiedTag)) {
+                if (file.exists()) {
+                    val tmp = targetFile()
+                    if (cryptoUtils.decryptFileAuthenticatedSymmetricAndValidateTag(file.inputStream(), tmp, identifier.key)) {
+                        return readFile(tmp)
+                    } else {
+                        throw QblStorageNotFound("Invalid key")
+                    }
                 }
-                entry.accessTime = Date()
-                repository.update(entry)
-                return externalFile
-            } else {
                 repository.delete(entry.id)
             }
+            file.delete()
+            repository.delete(entry.id)
         } catch (ex: EntityNotFoundException) {
         }
         return null
     }
 
-    override fun storeFile(plainFile: File, boxFile: BoxFile, path: BoxPath.File): Unit =
-        storeFile(plainFile.inputStream(), boxFile, path)
-
-    override fun storeFile(input: InputStream, boxFile: BoxFile, path: BoxPath.File) {
-        debug("Store local file ${path.name}")
-        val entry: StorageEntry = try {
-            repository.findEntry(boxFile.prefix, path, EntryType.FILE).letApply {
-                if (!checkExisting(boxFile, it)) {
-                    it.ref = boxFile.block
-                    it.modifiedTag = boxFile.mtime.toString()
-                }
-                debug("Override local file ${path.name}")
+    private fun updateStorageEntry(identifier: StorageIdentifier, input: InputStream) {
+        val (entry: StorageEntry, refreshFile: Boolean) = try {
+            val localEntry = repository.findEntry(identifier.prefix, identifier.path, identifier.type)
+            if (localEntry.ref != identifier.currentRef || localEntry.modifiedTag != identifier.modifiedTag) {
+                Pair(localEntry.letApply {
+                    getLocalFile(it).apply { if (exists()) delete() }
+                    it.ref = identifier.currentRef
+                    it.modifiedTag = identifier.modifiedTag
+                    debug("Override entry $identifier")
+                }, true)
+            } else {
+                debug("entry is up to date $identifier")
+                Pair(localEntry, false)
             }
         } catch (ex: EntityNotFoundException) {
-            StorageEntry(boxFile.prefix, path, boxFile.block, boxFile.mtime.toString(), EntryType.FILE, Date(), Date()).letApply {
+            val currentTime = Date()
+            Pair(StorageEntry(identifier.prefix, identifier.path, identifier.currentRef,
+                identifier.modifiedTag, identifier.type,
+                currentTime, currentTime).letApply {
                 repository.persist(it)
-                debug("Stored new local file ${path.name}")
+                debug("Stored new entry $identifier")
+            }, true)
+        }
+
+        if (refreshFile) {
+            val storageFile = getLocalFile(identifier, true)
+            if (!cryptoUtils.encryptStreamAuthenticatedSymmetric(input,
+                storageFile.outputStream(), identifier.key, null)) {
+                throw QblStorageException("Encryption failed")
             }
         }
-        val storageFile = getLocalFile(boxFile.prefix, boxFile.block, true)
-        if (!cryptoUtils.encryptStreamAuthenticatedSymmetric(input, storageFile.outputStream(), KeyParameter(boxFile.key), null)) {
-            throw QblStorageException("Encryption failed")
-        }
-        entry.storageTime = Date()
+
+        val currentTime = Date()
+        entry.accessTime = currentTime
+        entry.storageTime = currentTime
         repository.update(entry)
     }
 
-    private fun checkExisting(boxFile: BoxFile, storageEntry: StorageEntry): Boolean {
-        val storageFile = getLocalFile(storageEntry)
-        if (boxFile.mtime.toString() != storageEntry.modifiedTag ||
-            boxFile.block != storageEntry.ref) {
-            if (storageFile.exists() && !storageFile.delete()) {
-                throw QblStorageException("Cannot delete outdated file!")
-            }
-            return false
-        }
-        return storageFile.exists()
-    }
-
-    private fun getLocalFile(prefix: String, ref: String, createIfRequired: Boolean = false): File {
-        val folder = File(storageFolder, prefix)
+    private fun getLocalFile(storageIdentifier: StorageIdentifier, createIfRequired: Boolean = false): File {
+        val folder = File(storageFolder, storageIdentifier.prefix)
         if (!folder.exists() && createIfRequired) {
             if (!folder.mkdirs()) {
                 throw QblStorageException("Cannot create storage folders!")
             }
         }
-        val file = File(folder, ref)
+        val file = File(folder, storageIdentifier.currentRef)
         if (!file.exists() && createIfRequired) {
             if (!file.createNewFile()) {
                 throw QblStorageException("Cannot create new storage file!")
@@ -110,56 +140,18 @@ class BoxLocalStorage(private val storageFolder: File,
         return file
     }
 
-    override fun getDirectoryMetadata(boxVolume: BoxVolume, path: BoxPath.Folder, boxFolder: BoxFolder): DirectoryMetadata? {
-        try {
-            debug("Get local dm ${path.name}")
-            val entry = repository.findEntry(boxVolume.config.prefix, path, EntryType.DIRECTORY_METADATA)
-            val file = getLocalFile(boxVolume.config.prefix, boxFolder.ref)
-            if (file.exists()) {
-                if (entry.ref == boxFolder.ref) {
-                    val tmp = File.createTempFile("dir", "db2", tmpFolder)
-                    val key = KeyParameter(boxFolder.key)
-                    if (cryptoUtils.decryptFileAuthenticatedSymmetricAndValidateTag(file.inputStream(), tmp, key)) {
-                        return boxVolume.config.directoryFactory.open(tmp, boxFolder.ref)
-                    } else {
-                        throw QblStorageNotFound("Invalid key")
-                    }
-                } else {
-                    file.delete()
-                }
-            }
-            repository.delete(entry.id)
-        } catch (ex: EntityNotFoundException) {
-        }
-        return null
+    private data class StorageIdentifier(val path: BoxPath, val prefix: String, val type: EntryType,
+                                         val currentRef: String, val key: KeyParameter,
+                                         val modifiedTag: String) {
+        override fun toString(): String = "${type.name}\t$path\t$currentRef"
     }
 
-    override fun storeDirectoryMetadata(path: BoxPath.Folder, boxFolder: BoxFolder, directoryMetadata: DirectoryMetadata, prefix: String) {
-        debug("Store local dm ${path.name}")
-        val entry: StorageEntry = try {
-            repository.findEntry(prefix, path, EntryType.DIRECTORY_METADATA).letApply {
-                if (it.ref != boxFolder.ref) {
-                    getLocalFile(it).apply { if (exists()) delete() }
-                    it.ref = boxFolder.ref
-                }
-                debug("Override local dm ${path.name}")
-            }
-        } catch (ex: EntityNotFoundException) {
-            val currentTime = Date()
-            StorageEntry(prefix, path, boxFolder.ref, currentTime.toString(), EntryType.DIRECTORY_METADATA,
-                currentTime, currentTime).letApply {
-                repository.persist(it)
-                debug("Stored new local dm ${path.name}")
-            }
-        }
-        val storageFile = getLocalFile(prefix, boxFolder.ref, true)
-        if (!cryptoUtils.encryptStreamAuthenticatedSymmetric(directoryMetadata.path.inputStream(),
-            storageFile.outputStream(), KeyParameter(boxFolder.key), null)) {
+    private fun identifier(path: BoxPath.Folder, boxFolder: BoxFolder, prefix: String, modifiedTag: String = "") =
+        StorageIdentifier(path, prefix, EntryType.DIRECTORY_METADATA, boxFolder.ref,
+            KeyParameter(boxFolder.key), modifiedTag)
 
-            throw QblStorageException("Encryption failed")
-        }
-        entry.storageTime = Date()
-        repository.update(entry)
-    }
+    private fun identifier(path: BoxPath.File, boxFile: BoxFile) =
+        StorageIdentifier(path, boxFile.prefix, EntryType.FILE, boxFile.block,
+            KeyParameter(boxFile.key), boxFile.mtime.toString())
 
 }
