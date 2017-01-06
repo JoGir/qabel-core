@@ -41,7 +41,7 @@ class BoxLocalStorage(private val storageFolder: File,
         return getBoxFile(path, boxFile) ?: throw QblStorageException("Store local file failed!")
     }
 
-    override fun getDirectoryMetadata(boxVolume: BoxVolume, path: BoxPath.Folder, boxFolder: BoxFolder): DirectoryMetadata? {
+    override fun getDirectoryMetadata(boxVolume: BoxVolume, path: BoxPath.FolderLike, boxFolder: BoxFolder): DirectoryMetadata? {
         return identifier(path, boxFolder, boxVolume.config.prefix).let {
             debug("Get local dm $it")
             getStorageEntry(it,
@@ -50,7 +50,7 @@ class BoxLocalStorage(private val storageFolder: File,
         }
     }
 
-    override fun storeDirectoryMetadata(path: BoxPath.Folder, boxFolder: BoxFolder, directoryMetadata: DirectoryMetadata, prefix: String) {
+    override fun storeDirectoryMetadata(path: BoxPath.FolderLike, boxFolder: BoxFolder, directoryMetadata: DirectoryMetadata, prefix: String) {
         identifier(path, boxFolder, prefix, Hex.toHexString(directoryMetadata.version)).let {
             debug("Store local dm $it")
             updateStorageEntry(it, directoryMetadata.path.inputStream())
@@ -146,7 +146,7 @@ class BoxLocalStorage(private val storageFolder: File,
         override fun toString(): String = "${type.name}\t$path\t$currentRef"
     }
 
-    private fun identifier(path: BoxPath.Folder, boxFolder: BoxFolder, prefix: String, modifiedTag: String = "") =
+    private fun identifier(path: BoxPath.FolderLike, boxFolder: BoxFolder, prefix: String, modifiedTag: String = "") =
         StorageIdentifier(path, prefix, EntryType.DIRECTORY_METADATA, boxFolder.ref,
             KeyParameter(boxFolder.key), modifiedTag)
 

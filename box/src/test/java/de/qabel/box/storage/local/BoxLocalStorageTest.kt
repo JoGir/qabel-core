@@ -129,4 +129,17 @@ class BoxLocalStorageTest : CoreTestCase {
             assertThat(restoredNav.listFiles(), equalTo(it.listFiles()))
         }
     }
+
+    @Test
+    fun testStoreIndex(){
+        val rootBoxFolder = BoxFolder(volumeA.config.rootRef, "", volumeA.config.deviceId)
+        storage.storeDirectoryMetadata(BoxPath.Root, rootBoxFolder, navigationA.metadata, volumeA.config.prefix)
+
+        val restoredDM = storage.getDirectoryMetadata(volumeA, BoxPath.Root, rootBoxFolder) ?: throw AssertionError("IndexDM not restored!")
+        assertThat(navigationA.metadata.version, equalTo(restoredDM.version))
+
+        val indexNav = volumeA.loadIndex(restoredDM)
+        assertThat(indexNav.listFolders(), equalTo(navigationA.listFolders()))
+        assertThat(indexNav.listFiles(), equalTo(navigationA.listFiles()))
+    }
 }
