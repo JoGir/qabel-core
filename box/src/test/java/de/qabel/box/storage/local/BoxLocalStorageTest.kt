@@ -1,6 +1,8 @@
 package de.qabel.box.storage.local
 
 import de.qabel.box.storage.*
+import org.hamcrest.Matchers.equalTo
+import org.hamcrest.Matchers.hasSize
 import de.qabel.box.storage.dto.BoxPath
 import de.qabel.box.storage.local.database.LocalStorageDatabase
 import de.qabel.box.storage.local.repository.BoxLocalStorageRepository
@@ -27,6 +29,7 @@ class BoxLocalStorageTest : CoreTestCase {
     lateinit var deviceID: ByteArray
     lateinit var volumeA: BoxVolume
     lateinit var navigationA: BoxNavigation
+    lateinit var navigationFactory : FolderNavigationFactory
 
     lateinit var remoteStorageDir: File
     lateinit var readBackend: LocalReadBackend
@@ -53,7 +56,9 @@ class BoxLocalStorageTest : CoreTestCase {
         volumeA = BoxVolumeImpl(readBackend, LocalWriteBackend(remoteStorageDir),
             identityA.primaryKeyPair, deviceID, volumeTmpDir, "prefix")
         volumeA.createIndex("qabel")
-        navigationA = volumeA.navigate()
+        val indexNav = volumeA.navigate()
+        navigationA = indexNav
+        navigationFactory = FolderNavigationFactory(indexNav, volumeA.config)
 
 
         testFile = File(externalDir, "testfile").letApply {
@@ -105,5 +110,23 @@ class BoxLocalStorageTest : CoreTestCase {
     fun assertFileEquals(current: File, expected: File) {
         assertEquals(current.name, expected.name)
         assertArrayEquals(FileUtils.readFileToByteArray(current), FileUtils.readFileToByteArray(expected))
+    }
+
+    @Test
+    fun testStoreDM(){
+        val testFolderName = "Pix"
+        val testFolder = navigationA.createFolder(testFolderName)
+        val testPath = BoxPath.Root / testFolderName
+
+        navigationA.navigate(testFolder).let {
+            val testFile = it.upload(testFile.name, testFile)
+
+            storage.storeDirectoryMetadata(testPath, testFolder, it.metadata, volumeA.config.prefix)
+            val restoredDM = storage.getDirectoryMetadata(volumeA, testPath, testFolder) ?: throw AssertionError("DM not restored!")
+
+            val restoredNav = navigationFactory.fromDirectoryMetadata(testPath, restoredDM, testFolder)
+            assertThat(restoredNav.listFolders(), equalTo(it.listFolders()))
+            assertThat(restoredNav.listFiles(), equalTo(it.listFiles()))
+        }
     }
 }

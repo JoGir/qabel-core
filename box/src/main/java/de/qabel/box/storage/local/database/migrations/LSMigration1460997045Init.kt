@@ -12,7 +12,7 @@ class LSMigration1460997045Init(connection: Connection) : AbstractMigration(conn
                 id INTEGER PRIMARY KEY,
                 prefix VARCHAR(255)NOT NULL,
                 path TEXT NOT NULL,
-                block LONG NOT NULL,
+                ref LONG NOT NULL,
                 type INTEGER NOT NULL,
                 modified_tag VARCHAR(255) NOT NULL,
                 storage_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

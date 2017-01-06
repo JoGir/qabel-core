@@ -5,7 +5,7 @@ import de.qabel.core.repository.framework.Repository
 
 interface LocalStorageRepository : Repository<StorageEntry> {
 
-    fun findEntry(prefix: String, path: BoxPath) : StorageEntry
+    fun findEntry(prefix: String, path: BoxPath, type : EntryType) : StorageEntry
     fun findByPath(prefix : String, path : BoxPath) : List<StorageEntry>
 
 }

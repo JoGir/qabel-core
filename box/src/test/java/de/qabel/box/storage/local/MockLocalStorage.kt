@@ -1,6 +1,9 @@
 package de.qabel.box.storage.local
 
 import de.qabel.box.storage.BoxFile
+import de.qabel.box.storage.BoxFolder
+import de.qabel.box.storage.BoxVolume
+import de.qabel.box.storage.DirectoryMetadata
 import de.qabel.box.storage.dto.BoxPath
 import org.apache.commons.io.IOUtils
 import java.io.ByteArrayInputStream
@@ -33,6 +36,14 @@ class MockLocalStorage : LocalStorage {
 
     override fun storeFile(input: InputStream, boxFile: BoxFile, path: BoxPath.File) {
         files.put(key(path, boxFile), Pair(boxFile.block, IOUtils.toByteArray(input)))
+    }
+
+    override fun getDirectoryMetadata(boxVolume: BoxVolume, path: BoxPath.Folder, boxFolder: BoxFolder): DirectoryMetadata? {
+        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun storeDirectoryMetadata(path: BoxPath.Folder, boxFolder: BoxFolder, directoryMetadata: DirectoryMetadata, prefix: String) {
+        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
 }

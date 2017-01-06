@@ -2,7 +2,7 @@ package de.qabel.box.storage.local.repository
 
 import de.qabel.box.storage.dto.BoxPath
 import de.qabel.box.storage.local.repository.StorageEntryDB.ACCESS_TIME
-import de.qabel.box.storage.local.repository.StorageEntryDB.BLOCK
+import de.qabel.box.storage.local.repository.StorageEntryDB.REF
 import de.qabel.box.storage.local.repository.StorageEntryDB.MODIFIED_TAG
 import de.qabel.box.storage.local.repository.StorageEntryDB.PATH
 import de.qabel.box.storage.local.repository.StorageEntryDB.PREFIX
@@ -27,11 +27,11 @@ object StorageEntryDB : DBRelation<StorageEntry> {
 
     val PREFIX = field("prefix")
     val PATH = field("path")
-    val BLOCK = field("block")
+    val REF = field("ref")
     val TYPE = field("type")
     val MODIFIED_TAG = field("modified_tag")
 
-    override val ENTITY_FIELDS: List<DBField> = listOf(PREFIX, PATH, BLOCK, MODIFIED_TAG, STORAGE_TIME, ACCESS_TIME, TYPE)
+    override val ENTITY_FIELDS: List<DBField> = listOf(PREFIX, PATH, REF, MODIFIED_TAG, STORAGE_TIME, ACCESS_TIME, TYPE)
 
     override val ENTITY_CLASS: Class<StorageEntry> = StorageEntry::class.java
 
@@ -40,7 +40,7 @@ object StorageEntryDB : DBRelation<StorageEntry> {
             var i = startIndex
             statement.setString(i++, model.prefix)
             statement.setString(i++, model.path.toString())
-            statement.setString(i++, model.block)
+            statement.setString(i++, model.ref)
             statement.setString(i++, model.modifiedTag)
             statement.setLong(i++, model.storageTime.time)
             statement.setLong(i++, model.accessTime.time)
@@ -58,7 +58,7 @@ class StorageEntryResultAdapter : BaseEntityResultAdapter<StorageEntry>(StorageE
             val type = enumValue(getInt(TYPE.alias()), EntryType.values())
             return StorageEntry(getString(PREFIX.alias()),
                 createBoxPath(getString(PATH.alias()), type),
-                getString(BLOCK.alias()),
+                getString(REF.alias()),
                 getString(MODIFIED_TAG.alias()),
                 type,
                 Date(getLong(STORAGE_TIME.alias())),
@@ -78,6 +78,8 @@ class StorageEntryResultAdapter : BaseEntityResultAdapter<StorageEntry>(StorageE
         }
         return when (type) {
             EntryType.FILE -> BoxPath.File(parts.last(), path)
+            EntryType.DIRECTORY_METADATA -> BoxPath.Folder(parts.last(), path)
+            else -> throw IllegalArgumentException("Invalid EntryType!")
         }
     }
 
