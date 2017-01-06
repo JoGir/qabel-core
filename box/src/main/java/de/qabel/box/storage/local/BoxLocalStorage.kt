@@ -14,8 +14,8 @@ import de.qabel.core.crypto.CryptoUtils
 import de.qabel.core.extensions.letApply
 import de.qabel.core.logging.QabelLog
 import de.qabel.core.repository.exception.EntityNotFoundException
-import org.apache.commons.codec.binary.Hex
 import org.spongycastle.crypto.params.KeyParameter
+import org.spongycastle.util.encoders.Hex
 import java.io.File
 import java.io.InputStream
 import java.util.*
@@ -51,7 +51,7 @@ class BoxLocalStorage(private val storageFolder: File,
     }
 
     override fun storeDirectoryMetadata(path: BoxPath.Folder, boxFolder: BoxFolder, directoryMetadata: DirectoryMetadata, prefix: String) {
-        identifier(path, boxFolder, prefix, Hex.encodeHexString(directoryMetadata.version)).let {
+        identifier(path, boxFolder, prefix, Hex.toHexString(directoryMetadata.version)).let {
             debug("Store local dm $it")
             updateStorageEntry(it, directoryMetadata.path.inputStream())
         }
