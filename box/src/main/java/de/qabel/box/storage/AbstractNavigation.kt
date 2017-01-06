@@ -361,7 +361,6 @@ abstract class AbstractNavigation(
             throw QblStorageInvalidKey("failed to update file metadata")
         }
 
-        autocommit()
         return boxFile
     }
 
