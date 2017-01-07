@@ -11,13 +11,19 @@ import java.io.File
 import java.io.InputStream
 import java.util.*
 
-class MockLocalStorage : LocalStorage {
+class MockLocalStorage(var enabled: Boolean = true) : LocalStorage {
 
     private val files: MutableMap<String, Pair<String, ByteArray>> = HashMap()
 
     private fun key(path: BoxPath, file: BoxFile) = path.toString() + file.prefix
 
     override fun getBoxFile(path: BoxPath.File, boxFile: BoxFile): File? {
+        if (!enabled) return null
+
+        return getFile(path, boxFile)
+    }
+
+    private fun getFile(path: BoxPath.File, boxFile: BoxFile): File? {
         val key = key(path, boxFile)
         if (files.containsKey(key)) {
             val entry = files[key]!!
@@ -34,15 +40,31 @@ class MockLocalStorage : LocalStorage {
 
     override fun storeFile(input: InputStream, boxFile: BoxFile, path: BoxPath.File): File {
         files.put(key(path, boxFile), Pair(boxFile.block, IOUtils.toByteArray(input)))
-        return getBoxFile(path, boxFile)!!
+        return getFile(path, boxFile)!!
     }
 
     override fun getDirectoryMetadata(boxVolume: BoxVolume, path: BoxPath.FolderLike, boxFolder: BoxFolder): DirectoryMetadata? {
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
+        if (!enabled) return null
+
+        val key = key(path, boxVolume.config.prefix)
+        if (files.containsKey(key)) {
+            val entry = files[key]!!
+            if (entry.first == boxFolder.ref) {
+                val file = File.createTempFile("dir", "db2")
+                IOUtils.copy(ByteArrayInputStream(entry.second), file.outputStream())
+                return boxVolume.config.directoryFactory.open(file, boxFolder.ref)
+            } else {
+                files.remove(key)
+            }
+        }
+        return null
     }
 
+    private fun key(path: BoxPath, prefix: String) = path.toString() + prefix
     override fun storeDirectoryMetadata(path: BoxPath.FolderLike, boxFolder: BoxFolder, directoryMetadata: DirectoryMetadata, prefix: String) {
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
+        if (directoryMetadata.path.exists()) {
+            files.put(key(path, prefix), Pair(boxFolder.ref, IOUtils.toByteArray(directoryMetadata.path.inputStream())))
+        }
     }
 
 }
