@@ -1,10 +1,8 @@
 package de.qabel.box.storage.local
 
-import de.qabel.box.storage.BoxFile
-import de.qabel.box.storage.BoxFolder
-import de.qabel.box.storage.BoxVolume
-import de.qabel.box.storage.DirectoryMetadata
+import de.qabel.box.storage.*
 import de.qabel.box.storage.dto.BoxPath
+import de.qabel.box.storage.exceptions.QblStorageException
 import org.apache.commons.io.IOUtils
 import java.io.ByteArrayInputStream
 import java.io.File
@@ -61,6 +59,15 @@ class MockLocalStorage(var enabled: Boolean = true) : LocalStorage {
     }
 
     private fun key(path: BoxPath, prefix: String) = path.toString() + prefix
+    override fun storeDmByNavigation(navigation: BoxNavigation) {
+        if (navigation.metadata.path.exists()) {
+            if (navigation is AbstractNavigation) {
+                files.put(key(navigation.path, navigation.volumeConfig.prefix), Pair(navigation.metadata.fileName,
+                    IOUtils.toByteArray(navigation.metadata.path.inputStream())))
+            } else throw QblStorageException("Cannot store unknown navigation!")
+        }
+    }
+
     override fun storeDirectoryMetadata(path: BoxPath.FolderLike, boxFolder: BoxFolder, directoryMetadata: DirectoryMetadata, prefix: String) {
         if (directoryMetadata.path.exists()) {
             files.put(key(path, prefix), Pair(boxFolder.ref, IOUtils.toByteArray(directoryMetadata.path.inputStream())))
