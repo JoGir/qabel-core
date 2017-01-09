@@ -13,7 +13,7 @@ import java.util.*
 class FolderNavigation(
         override val path: BoxPath.FolderLike,
         dm: DirectoryMetadata,
-        private val key: ByteArray,
+        val key: ByteArray,
         override val indexNavigation: IndexNavigation,
         volumeConfig: BoxVolumeConfig
 ) : AbstractNavigation(path, dm, volumeConfig) {

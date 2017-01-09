@@ -1,9 +1,6 @@
 package de.qabel.box.storage.local
 
-import de.qabel.box.storage.BoxFile
-import de.qabel.box.storage.BoxFolder
-import de.qabel.box.storage.BoxVolume
-import de.qabel.box.storage.DirectoryMetadata
+import de.qabel.box.storage.*
 import de.qabel.box.storage.dto.BoxPath
 import de.qabel.box.storage.exceptions.QblStorageException
 import de.qabel.box.storage.exceptions.QblStorageNotFound
@@ -50,6 +47,16 @@ class BoxLocalStorage(private val storageFolder: File,
         }
     }
 
+    override fun storeDmByNavigation(navigation: BoxNavigation) {
+        val identifier = when (navigation) {
+            is FolderNavigation -> identifier(navigation)
+            is DefaultIndexNavigation -> identifier(navigation.volumeConfig, navigation)
+            else -> throw QblStorageException("Cannot store unknown navigation!")
+        }
+        updateStorageEntry(identifier, navigation.metadata.path.inputStream())
+    }
+
+    @Deprecated("use navigation")
     override fun storeDirectoryMetadata(path: BoxPath.FolderLike, boxFolder: BoxFolder, directoryMetadata: DirectoryMetadata, prefix: String) {
         identifier(path, boxFolder, prefix, Hex.toHexString(directoryMetadata.version)).let {
             debug("Store local dm $it")
@@ -149,6 +156,14 @@ class BoxLocalStorage(private val storageFolder: File,
     private fun identifier(path: BoxPath.FolderLike, boxFolder: BoxFolder, prefix: String, modifiedTag: String = "") =
         StorageIdentifier(path, prefix, EntryType.DIRECTORY_METADATA, boxFolder.ref,
             KeyParameter(boxFolder.key), modifiedTag)
+
+    private fun identifier(navigation: FolderNavigation) =
+        StorageIdentifier(navigation.path, navigation.prefix, EntryType.DIRECTORY_METADATA, navigation.metadata.fileName,
+            KeyParameter(navigation.key), Hex.toHexString(navigation.metadata.version))
+
+    private fun identifier(volumeConfig: BoxVolumeConfig, navigation: IndexNavigation) =
+        StorageIdentifier(navigation.path, volumeConfig.prefix, EntryType.DIRECTORY_METADATA, navigation.metadata.fileName,
+            KeyParameter(volumeConfig.deviceId), Hex.toHexString(navigation.metadata.version))
 
     private fun identifier(path: BoxPath.File, boxFile: BoxFile) =
         StorageIdentifier(path, boxFile.prefix, EntryType.FILE, boxFile.block,
