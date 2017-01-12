@@ -150,7 +150,7 @@ class BoxLocalStorage(private val storageFolder: File,
     private data class StorageIdentifier(val path: BoxPath, val prefix: String, val type: EntryType,
                                          val currentRef: String, val key: KeyParameter,
                                          val modifiedTag: String) {
-        override fun toString(): String = "${type.name}\t$path\t$currentRef"
+        override fun toString(): String = "${type.name}\t$path\t$currentRef\t$modifiedTag"
     }
 
     private fun identifier(path: BoxPath.FolderLike, boxFolder: BoxFolder, prefix: String, modifiedTag: String = "") =
