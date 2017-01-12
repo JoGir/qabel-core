@@ -1,4 +1,4 @@
-package de.qabel.box.storage.local.database.migrations
+package de.qabel.client.box.storage.repository.migrations
 
 import de.qabel.core.repository.sqlite.migration.AbstractMigration
 import java.sql.Connection

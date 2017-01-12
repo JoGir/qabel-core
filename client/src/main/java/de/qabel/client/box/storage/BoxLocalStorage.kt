@@ -1,12 +1,12 @@
-package de.qabel.box.storage.local
+package de.qabel.client.box.storage
 
 import de.qabel.box.storage.*
 import de.qabel.box.storage.dto.BoxPath
 import de.qabel.box.storage.exceptions.QblStorageException
 import de.qabel.box.storage.exceptions.QblStorageNotFound
-import de.qabel.box.storage.local.repository.EntryType
-import de.qabel.box.storage.local.repository.LocalStorageRepository
-import de.qabel.box.storage.local.repository.StorageEntry
+import de.qabel.client.box.storage.repository.EntryType
+import de.qabel.client.box.storage.repository.LocalStorageRepository
+import de.qabel.client.box.storage.repository.StorageEntry
 import de.qabel.core.crypto.CryptoUtils
 import de.qabel.core.extensions.letApply
 import de.qabel.core.logging.QabelLog
@@ -25,43 +25,54 @@ class BoxLocalStorage(private val storageFolder: File,
     override fun getBoxFile(path: BoxPath.File,
                             boxFile: BoxFile): File? {
         return identifier(path, boxFile).let {
-            debug("Get local file $it")
+            debug("Get file $it")
             getStorageEntry(it, { File(tmpFolder, boxFile.name) }, { it })
         }
     }
 
     override fun storeFile(input: InputStream, boxFile: BoxFile, path: BoxPath.File): File {
         identifier(path, boxFile).let {
-            debug("Store local file $it}")
+            debug("Store file $it}")
             updateStorageEntry(it, input)
         }
-        return getBoxFile(path, boxFile) ?: throw QblStorageException("Store local file failed!")
+        return getBoxFile(path, boxFile) ?: throw QblStorageException("Store storage file failed!")
     }
 
-    override fun getDirectoryMetadata(boxVolume: BoxVolume, path: BoxPath.FolderLike, boxFolder: BoxFolder): DirectoryMetadata? {
-        return identifier(path, boxFolder, boxVolume.config.prefix).let {
-            debug("Get local dm $it")
+    override fun getBoxNavigation(navigationFactory: FolderNavigationFactory,
+                                  path: BoxPath.Folder, boxFolder: BoxFolder): BoxNavigation? {
+        return identifier(path, boxFolder, navigationFactory.volumeConfig.prefix).let {
+            debug("Get dm $it")
             getStorageEntry(it,
                 { File.createTempFile("dir", "db2", tmpFolder) },
-                { file -> boxVolume.config.directoryFactory.open(file, it.currentRef) })
+                { file ->
+                    navigationFactory.volumeConfig.directoryFactory.open(file, it.currentRef).let {
+                        navigationFactory.fromDirectoryMetadata(path, it, boxFolder)
+                    }
+                })
         }
     }
 
-    override fun storeDmByNavigation(navigation: BoxNavigation) {
+    override fun getIndexNavigation(volume: BoxVolume): IndexNavigation? {
+        return identifier(BoxPath.Root, BoxFolder(volume.config.rootRef, "root",
+            volume.config.deviceId), volume.config.prefix).let {
+            debug("Get index dm $it")
+            getStorageEntry(it,
+                { File.createTempFile("dir", "db2", tmpFolder) },
+                { file ->
+                    volume.config.directoryFactory.open(file, it.currentRef).let {
+                        volume.loadIndex(it)
+                    }
+                })
+        }
+    }
+
+    override fun storeNavigation(navigation: BoxNavigation) {
         val identifier = when (navigation) {
             is FolderNavigation -> identifier(navigation)
             is DefaultIndexNavigation -> identifier(navigation.volumeConfig, navigation)
             else -> throw QblStorageException("Cannot store unknown navigation!")
         }
         updateStorageEntry(identifier, navigation.metadata.path.inputStream())
-    }
-
-    @Deprecated("use navigation")
-    override fun storeDirectoryMetadata(path: BoxPath.FolderLike, boxFolder: BoxFolder, directoryMetadata: DirectoryMetadata, prefix: String) {
-        identifier(path, boxFolder, prefix, Hex.toHexString(directoryMetadata.version)).let {
-            debug("Store local dm $it")
-            updateStorageEntry(it, directoryMetadata.path.inputStream())
-        }
     }
 
     private fun <T> getStorageEntry(identifier: StorageIdentifier, targetFile: () -> File, readFile: (File) -> T?): T? {

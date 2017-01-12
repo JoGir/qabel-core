@@ -1,10 +1,9 @@
-package de.qabel.box.storage.local.repository
+package de.qabel.client.box.storage.repository
 
 import de.qabel.box.storage.dto.BoxPath
-import de.qabel.box.storage.local.database.LocalStorageDatabase
-import de.qabel.box.storage.local.repository.StorageEntryDB.PATH
-import de.qabel.box.storage.local.repository.StorageEntryDB.PREFIX
-import de.qabel.box.storage.local.repository.StorageEntryDB.TYPE
+import de.qabel.client.box.storage.repository.StorageEntryDB.PATH
+import de.qabel.client.box.storage.repository.StorageEntryDB.PREFIX
+import de.qabel.client.box.storage.repository.StorageEntryDB.TYPE
 import de.qabel.core.repository.EntityManager
 import de.qabel.core.repository.framework.BaseRepository
 import de.qabel.core.repository.sqlite.ClientDatabase
@@ -25,7 +24,7 @@ class BoxLocalStorageRepository(database: ClientDatabase,
     override fun findByPath(prefix: String, path: BoxPath): List<StorageEntry> {
         with(createEntityQuery()) {
             whereAndEquals(PREFIX, prefix)
-          //  whereAndEquals(PATH, path.toString())
+            //  whereAndEquals(PATH, path.toString())
             return getResultList(queryBuilder = this)
         }
     }

@@ -28,7 +28,7 @@ class FolderNavigation(
 
     @Throws(QblStorageException::class)
     override fun reloadMetadata(): DirectoryMetadata {
-        logger.trace("Reloading directory metadata")
+        logger.trace("Reloading directory metadata $path")
         // duplicate of navigate()
         try {
             readBackend.download(dm.fileName, mHash).use { download ->

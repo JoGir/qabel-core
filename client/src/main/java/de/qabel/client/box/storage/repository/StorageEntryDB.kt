@@ -1,13 +1,13 @@
-package de.qabel.box.storage.local.repository
+package de.qabel.client.box.storage.repository
 
 import de.qabel.box.storage.dto.BoxPath
-import de.qabel.box.storage.local.repository.StorageEntryDB.ACCESS_TIME
-import de.qabel.box.storage.local.repository.StorageEntryDB.REF
-import de.qabel.box.storage.local.repository.StorageEntryDB.MODIFIED_TAG
-import de.qabel.box.storage.local.repository.StorageEntryDB.PATH
-import de.qabel.box.storage.local.repository.StorageEntryDB.PREFIX
-import de.qabel.box.storage.local.repository.StorageEntryDB.STORAGE_TIME
-import de.qabel.box.storage.local.repository.StorageEntryDB.TYPE
+import de.qabel.client.box.storage.repository.StorageEntryDB.ACCESS_TIME
+import de.qabel.client.box.storage.repository.StorageEntryDB.REF
+import de.qabel.client.box.storage.repository.StorageEntryDB.MODIFIED_TAG
+import de.qabel.client.box.storage.repository.StorageEntryDB.PATH
+import de.qabel.client.box.storage.repository.StorageEntryDB.PREFIX
+import de.qabel.client.box.storage.repository.StorageEntryDB.STORAGE_TIME
+import de.qabel.client.box.storage.repository.StorageEntryDB.TYPE
 import de.qabel.core.repository.EntityManager
 import de.qabel.core.repository.framework.DBField
 import de.qabel.core.repository.framework.DBRelation

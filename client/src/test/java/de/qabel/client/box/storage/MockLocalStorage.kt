@@ -1,4 +1,4 @@
-package de.qabel.box.storage.local
+package de.qabel.client.box.storage
 
 import de.qabel.box.storage.*
 import de.qabel.box.storage.dto.BoxPath
@@ -41,16 +41,34 @@ class MockLocalStorage(var enabled: Boolean = true) : LocalStorage {
         return getFile(path, boxFile)!!
     }
 
-    override fun getDirectoryMetadata(boxVolume: BoxVolume, path: BoxPath.FolderLike, boxFolder: BoxFolder): DirectoryMetadata? {
+    override fun getBoxNavigation(navigationFactory: FolderNavigationFactory, path: BoxPath.Folder, boxFolder: BoxFolder): BoxNavigation? {
         if (!enabled) return null
 
-        val key = key(path, boxVolume.config.prefix)
+        val key = key(path, navigationFactory.volumeConfig.prefix)
         if (files.containsKey(key)) {
             val entry = files[key]!!
             if (entry.first == boxFolder.ref) {
                 val file = File.createTempFile("dir", "db2")
                 IOUtils.copy(ByteArrayInputStream(entry.second), file.outputStream())
-                return boxVolume.config.directoryFactory.open(file, boxFolder.ref)
+                return navigationFactory.fromDirectoryMetadata(path,
+                    navigationFactory.volumeConfig.directoryFactory.open(file, boxFolder.ref), boxFolder)
+            } else {
+                files.remove(key)
+            }
+        }
+        return null
+    }
+
+    override fun getIndexNavigation(volume: BoxVolume): IndexNavigation? {
+        if (!enabled) return null
+
+        val key = key(BoxPath.Root, volume.config.prefix)
+        if (files.containsKey(key)) {
+            val entry = files[key]!!
+            if (entry.first == volume.config.rootRef) {
+                val file = File.createTempFile("dir", "db2")
+                IOUtils.copy(ByteArrayInputStream(entry.second), file.outputStream())
+                return volume.loadIndex(volume.config.directoryFactory.open(file, volume.config.rootRef))
             } else {
                 files.remove(key)
             }
@@ -59,18 +77,12 @@ class MockLocalStorage(var enabled: Boolean = true) : LocalStorage {
     }
 
     private fun key(path: BoxPath, prefix: String) = path.toString() + prefix
-    override fun storeDmByNavigation(navigation: BoxNavigation) {
-        if (navigation.metadata.path.exists()) {
+    override fun storeNavigation(navigation: BoxNavigation) {
+        if (enabled && navigation.metadata.path.exists()) {
             if (navigation is AbstractNavigation) {
                 files.put(key(navigation.path, navigation.volumeConfig.prefix), Pair(navigation.metadata.fileName,
                     IOUtils.toByteArray(navigation.metadata.path.inputStream())))
             } else throw QblStorageException("Cannot store unknown navigation!")
-        }
-    }
-
-    override fun storeDirectoryMetadata(path: BoxPath.FolderLike, boxFolder: BoxFolder, directoryMetadata: DirectoryMetadata, prefix: String) {
-        if (directoryMetadata.path.exists()) {
-            files.put(key(path, prefix), Pair(boxFolder.ref, IOUtils.toByteArray(directoryMetadata.path.inputStream())))
         }
     }
 

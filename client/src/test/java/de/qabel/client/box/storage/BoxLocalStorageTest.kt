@@ -1,9 +1,10 @@
-package de.qabel.box.storage.local
+package de.qabel.client.box.storage
 
 import de.qabel.box.storage.*
 import de.qabel.box.storage.dto.BoxPath
-import de.qabel.box.storage.local.database.LocalStorageDatabase
-import de.qabel.box.storage.local.repository.BoxLocalStorageRepository
+import de.qabel.client.MainClientDatabase
+import de.qabel.client.box.MockStorageBackend
+import de.qabel.client.box.storage.repository.BoxLocalStorageRepository
 import de.qabel.core.config.Identity
 import de.qabel.core.crypto.CryptoUtils
 import de.qabel.core.extensions.CoreTestCase
@@ -28,10 +29,11 @@ class BoxLocalStorageTest : CoreTestCase {
     lateinit var deviceID: ByteArray
     lateinit var volumeA: BoxVolume
     lateinit var navigationA: BoxNavigation
-    lateinit var navigationFactory : FolderNavigationFactory
+    lateinit var navigationFactory: FolderNavigationFactory
+
+    lateinit var storageBackend: MockStorageBackend
 
     lateinit var remoteStorageDir: File
-    lateinit var readBackend: LocalReadBackend
     lateinit var volumeTmpDir: File
 
 
@@ -49,10 +51,10 @@ class BoxLocalStorageTest : CoreTestCase {
         storageDir = createTempDir("storage")
         externalDir = createTempDir("external")
 
-        readBackend = LocalReadBackend(remoteStorageDir)
+        storageBackend = MockStorageBackend()
         val cryptoUtil = CryptoUtils()
         deviceID = cryptoUtil.getRandomBytes(16)
-        volumeA = BoxVolumeImpl(readBackend, LocalWriteBackend(remoteStorageDir),
+        volumeA = BoxVolumeImpl(storageBackend, storageBackend,
             identityA.primaryKeyPair, deviceID, volumeTmpDir, "prefix")
         volumeA.createIndex("qabel")
         val indexNav = volumeA.navigate()
@@ -67,7 +69,7 @@ class BoxLocalStorageTest : CoreTestCase {
         }
         testBoxFile = navigationA.upload(testFile.name, testFile)
         val connection = DriverManager.getConnection("jdbc:sqlite::memory:")
-        val clientDatabase = LocalStorageDatabase(connection)
+        val clientDatabase = MainClientDatabase(connection)
         clientDatabase.migrate()
         storage = BoxLocalStorage(storageDir, externalDir, cryptoUtil, BoxLocalStorageRepository(clientDatabase, EntityManager()))
     }
@@ -113,7 +115,7 @@ class BoxLocalStorageTest : CoreTestCase {
     }
 
     @Test
-    fun testStoreDM(){
+    fun testStoreDM() {
         val testFolderName = "Pix"
         val testFolder = navigationA.createFolder(testFolderName)
         val testPath = BoxPath.Root / testFolderName
@@ -121,25 +123,20 @@ class BoxLocalStorageTest : CoreTestCase {
         navigationA.navigate(testFolder).let {
             val testFile = it.upload(testFile.name, testFile)
 
-            storage.storeDirectoryMetadata(testPath, testFolder, it.metadata, volumeA.config.prefix)
-            val restoredDM = storage.getDirectoryMetadata(volumeA, testPath, testFolder) ?: throw AssertionError("DM not restored!")
-
-            val restoredNav = navigationFactory.fromDirectoryMetadata(testPath, restoredDM, testFolder)
+            storage.storeNavigation(it)
+            val restoredNav = storage.getBoxNavigation(navigationFactory, testPath, testFolder) ?: throw AssertionError("Navigation not restored!")
             assertThat(restoredNav.listFolders(), equalTo(it.listFolders()))
             assertThat(restoredNav.listFiles(), equalTo(it.listFiles()))
         }
     }
 
     @Test
-    fun testStoreIndex(){
-        val rootBoxFolder = BoxFolder(volumeA.config.rootRef, "", volumeA.config.deviceId)
-        storage.storeDirectoryMetadata(BoxPath.Root, rootBoxFolder, navigationA.metadata, volumeA.config.prefix)
+    fun testStoreIndex() {
+        storage.storeNavigation(navigationA)
 
-        val restoredDM = storage.getDirectoryMetadata(volumeA, BoxPath.Root, rootBoxFolder) ?: throw AssertionError("IndexDM not restored!")
-        assertThat(navigationA.metadata.version, equalTo(restoredDM.version))
-
-        val indexNav = volumeA.loadIndex(restoredDM)
-        assertThat(indexNav.listFolders(), equalTo(navigationA.listFolders()))
-        assertThat(indexNav.listFiles(), equalTo(navigationA.listFiles()))
+        val restoredIndexNavigation = storage.getIndexNavigation(volumeA) ?: throw AssertionError("IndexNav not restored!")
+        assertThat(restoredIndexNavigation.metadata.version, equalTo(navigationA.metadata.version))
+        assertThat(restoredIndexNavigation.listFolders(), equalTo(navigationA.listFolders()))
+        assertThat(restoredIndexNavigation.listFiles(), equalTo(navigationA.listFiles()))
     }
 }

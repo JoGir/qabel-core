@@ -1,4 +1,4 @@
-package de.qabel.box.storage.local.repository
+package de.qabel.client.box.storage.repository
 
 import de.qabel.box.storage.dto.BoxPath
 import de.qabel.core.repository.framework.Repository
