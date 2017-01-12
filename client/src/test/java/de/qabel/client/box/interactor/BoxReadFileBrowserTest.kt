@@ -35,6 +35,7 @@ class BoxReadFileBrowserTest : CoreTestCase {
 
     lateinit var prepareUseCase: OperationFileBrowser
     lateinit var useCase: ReadFileBrowser
+    lateinit var navigator: VolumeNavigator
 
     val samplePayload: String = "payload"
     val sampleName = "sampleName"
@@ -52,7 +53,7 @@ class BoxReadFileBrowserTest : CoreTestCase {
             storage,
             "Blake2b",
             createTempDir()), identity.primaryKeyPair)
-        val navigator = BoxVolumeNavigator(keys, volume, localStorage)
+        navigator = BoxVolumeNavigator(keys, volume, localStorage)
         val boxScheduler = MainBoxSchedulers(Schedulers.immediate())
         useCase = BoxReadFileBrowser(keys, navigator, mock(), boxScheduler)
         prepareUseCase = BoxOperationFileBrowser(keys, navigator, mock(), localStorage, boxScheduler)
@@ -78,6 +79,25 @@ class BoxReadFileBrowserTest : CoreTestCase {
 
         listing eq setOf(sample.name, "firstFolder")
         subfolderListing eq setOf(sample.name)
+    }
+
+    @Test
+    fun listFast() {
+        val folder = BoxPath.Root / "firstFolder"
+        val folder2 = BoxPath.Root / "secondFolder"
+        val file = BoxPath.Root * sampleName
+        prepareUseCase.upload(file, samplePayload.toUploadSource(sample)).second.waitFor()
+        prepareUseCase.createFolder(folder).waitFor()
+
+        //create folder without updating local
+        val nav = navigator.navigateTo(BoxPath.Root)
+        nav.createFolder(folder2.name)
+
+        val results = useCase.list(BoxPath.Root, true).toList().toBlocking().last()
+        val cachedResult = results.first().map { it.name }.toSet()
+        val result = results[1].map { it.name }.toSet()
+        cachedResult eq setOf(sample.name, folder.name)
+        result eq setOf(sample.name, folder.name, folder2.name)
     }
 
     @Test
