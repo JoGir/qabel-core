@@ -52,7 +52,6 @@ class BoxOperationFileBrowser @Inject constructor(keyAndPrefix: KeyAndPrefix,
                             }
                         })
                     operation.status = FileOperationState.Status.COMPLETE
-                    println(nav.listFiles().map { it.name + "\n" })
                     localStorage.storeNavigation(nav)
                 }
                 it.onCompleted()
@@ -114,7 +113,6 @@ class BoxOperationFileBrowser @Inject constructor(keyAndPrefix: KeyAndPrefix,
         try {
             subscriber.onNext(Unit)
             val (boxObject, nav) = volumeNavigator.queryObjectAndNav(path)
-            println("NAV: ${Hex.toHexString(nav.metadata.version)}")
             when (boxObject) {
                 is BoxFolder -> nav.delete(boxObject)
                 is BoxFile -> nav.delete(boxObject)

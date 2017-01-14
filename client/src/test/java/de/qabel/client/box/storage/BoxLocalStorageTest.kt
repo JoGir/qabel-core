@@ -99,7 +99,6 @@ class BoxLocalStorageTest : CoreTestCase {
 
         val boxFile = navigationA.listFiles().first()
         assertNull(storage.getBoxFile(path, boxFile))
-        println(localDir.list().joinToString("\n"))
         assertEquals(0, localDir.list().size)
 
         storage.storeFile(storedFile.inputStream(), boxFile, path)
