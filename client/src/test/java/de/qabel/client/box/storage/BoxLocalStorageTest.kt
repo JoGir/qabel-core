@@ -62,7 +62,7 @@ class BoxLocalStorageTest : CoreTestCase {
         navigationFactory = FolderNavigationFactory(indexNav, volumeA.config)
 
 
-        testFile = File(externalDir, "testfile").letApply {
+        testFile = File(externalDir, "testfile%s 😁").letApply {
             val random = randomFile(100)
             FileUtils.copyFile(random, it)
             random.delete()
