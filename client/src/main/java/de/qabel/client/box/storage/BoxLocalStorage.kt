@@ -76,25 +76,29 @@ class BoxLocalStorage(private val storageFolder: File,
     }
 
     private fun <T> getStorageEntry(identifier: StorageIdentifier, targetFile: () -> File, readFile: (File) -> T?): T? {
-        try {
-            val entry = repository.findEntry(identifier.prefix, identifier.path, identifier.type)
-            val file = getLocalFile(entry)
-            if (entry.ref == identifier.currentRef &&
-                (identifier.modifiedTag.isBlank() || identifier.modifiedTag == entry.modifiedTag)) {
-                if (file.exists()) {
-                    val tmp = targetFile()
-                    if (cryptoUtils.decryptFileAuthenticatedSymmetricAndValidateTag(file.inputStream(), tmp, identifier.key)) {
-                        return readFile(tmp)
-                    } else {
-                        throw QblStorageNotFound("Invalid key")
-                    }
-                }
-                repository.delete(entry.id)
-            }
-            file.delete()
-            repository.delete(entry.id)
+        val entry = try {
+            repository.findEntry(identifier.prefix, identifier.path, identifier.type)
         } catch (ex: EntityNotFoundException) {
+            //No db storage entry
+            return null
         }
+
+        val file = getLocalFile(entry)
+        if (entry.ref == identifier.currentRef &&
+            (identifier.modifiedTag.isBlank() || identifier.modifiedTag == entry.modifiedTag)) {
+            if (file.exists()) {
+                val tmp = targetFile()
+                if (cryptoUtils.decryptFileAuthenticatedSymmetricAndValidateTag(file.inputStream(), tmp, identifier.key)) {
+                    return readFile(tmp)
+                } else {
+                    throw QblStorageNotFound("Invalid key")
+                }
+            }
+        }
+        //File is outdated
+        file.delete()
+        repository.delete(entry.id)
+
         return null
     }
 
