@@ -3,7 +3,7 @@ package de.qabel.client.box.storage.repository.migrations
 import de.qabel.core.repository.sqlite.migration.AbstractMigration
 import java.sql.Connection
 
-class LSMigration1460997045Init(connection: Connection) : AbstractMigration(connection) {
+class LocalStorageMigration1460997045Init(connection: Connection) : AbstractMigration(connection) {
 
     override fun getVersion() = 1460997045L
 
