@@ -1,0 +1,28 @@
+group = 'de.qabel.client'
+
+ext.sharedManifest.attributes 'Component': 'Client'
+
+jar {
+    manifest = project.manifest {
+        from sharedManifest
+        attributes 'Implementation-Title': 'Qabel Core - Client Component'
+    }
+}
+
+compileTestJava.dependsOn tasks.getByPath(':core:testClasses')
+dependencies {
+    compile project(':core')
+    compile project(':box')
+    compile project(':chat')
+    testCompile project(':core').sourceSets.test.output
+    testCompile project(':box').sourceSets.test.output
+    testCompile project(':chat').sourceSets.test.output
+    compile group: 'javax.inject', name: 'javax.inject', version: '1'
+    testCompile "com.nhaarman:mockito-kotlin:0.5.0"
+}
+
+tasks.withType(Test) {
+    def platform = "${System.properties['os.name'].toLowerCase()}_${System.properties['os.arch']}"
+    systemProperty "java.library.path", "../core/build/binaries/curve25519SharedLibrary/$platform/"
+}
+testJar.manifest.attributes 'Implementation-Title': 'Qabel Core - Client Component - Test artifact'

@@ -17,13 +17,9 @@ open class BoxVolumeImpl(final override val config: BoxVolumeConfig, private val
     private val cryptoUtils = CryptoUtils()
     private val indexDmDownloader by lazy {
         with (config) {
-            object : IndexDMDownloader(readBackend, keyPair, tempDir, directoryFactory) {
-                override fun startDownload(rootRef: String)
-                    = readBackend.download(rootRef)
-            }
+            IndexDMDownloader(readBackend, keyPair, tempDir, directoryFactory)
         }
     }
-
     override fun getReadBackend() = config.readBackend
 
     val indexNavigation: IndexNavigation by lazy {
@@ -43,6 +39,9 @@ open class BoxVolumeImpl(final override val config: BoxVolumeConfig, private val
         Security.addProvider(QabelBoxDigestProvider())
         Security.addProvider(BouncyCastleProvider())
     }
+
+    override fun loadIndex(indexDirectoryMetadata: DirectoryMetadata) : IndexNavigation =
+        DefaultIndexNavigation(indexDirectoryMetadata, keyPair, config)
 
     @JvmOverloads
     constructor (
